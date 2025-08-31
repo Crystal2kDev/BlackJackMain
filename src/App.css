@@ -1,0 +1,41 @@
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(to bottom, #3a4b5c, #1a2632);
+  overflow-x: hidden;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #3a4b5c, #1a2632);
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.page-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
