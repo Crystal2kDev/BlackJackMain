@@ -1,146 +1,186 @@
+/* Общий фон и контейнер */
 .game {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #2e7d32;
-  color: white;
-  font-family: Arial, sans-serif;
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(to bottom, #0f172a, #1e293b);
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+}
+
+/* Ошибки и результаты */
+.game-error {
+  position: absolute;
+  top: 80px;
+  background: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: #fff;
+  font-weight: 500;
+  z-index: 100;
+}
+
+.game-result {
+  position: absolute;
+  top: 120px;
+  right: 2rem;
+  background: #2563eb;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  text-align: center;
+}
+
+/* Основной стол */
+.game-table-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: center;
 }
 
 .game-table {
   position: relative;
   width: 100%;
-  max-width: 1200px;
-  padding: 20px;
+  background: radial-gradient(circle at 50% 0%, #0f172a 0%, #1e293b 100%);
+  border-radius: 50% / 10%;
+  padding: 2rem 1rem 4rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-.game-shoe {
+/* Башмак */
+.shoe {
   position: absolute;
-  top: 10px;
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.shoe-card {
-  fill: #333;
-}
-
-.game-dealer {
-  margin-top: 120px;
-  text-align: center;
-}
-
-.game-players {
+/* Дилер */
+.dealer-area {
   display: flex;
-  justify-content: space-around;
-  margin-top: 40px;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
-.game-player {
-  text-align: center;
+.dealer-area h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
 }
 
-.game-player-1 {
-  margin-left: 20px;
-}
-
-.game-player-2 {
-  margin: 0;
-}
-
-.game-player-3 {
-  margin-right: 20px;
-}
-
-.game-cards {
+.cards-row {
   display: flex;
-  gap: 10px;
+  gap: 0.5rem;
   justify-content: center;
 }
 
+/* Игровые карты */
 .game-card {
   width: 80px;
   height: 120px;
-  border-radius: 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  object-fit: cover;
 }
 
+/* Игроки */
+.player-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.player-area h3 {
+  margin-bottom: 0.5rem;
+}
+
+/* Контролы */
 .game-controls {
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
 }
 
-.game-bet-button,
-.game-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #1976d2;
-  color: white;
+.game-controls button {
+  background: linear-gradient(to bottom, #1e40af, #3b82f6);
+  color: #fff;
   border: none;
-  border-radius: 5px;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.game-bet-button:hover,
-.game-button:hover {
-  background-color: #1565c0;
+.game-controls button:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.5);
 }
 
-.game-bet-button:disabled,
-.game-button:disabled {
-  background-color: #666;
+.game-controls button:disabled {
+  background: #475569;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
+/* Информация */
 .game-info {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 2rem;
+  font-size: 1rem;
 }
 
-.game-chip {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  background-color: #ffd700;
-  border-radius: 50%;
-  margin-left: 5px;
+/* Адаптив */
+@media (max-width: 1024px) {
+  .game-card {
+    width: 60px;
+    height: 90px;
+  }
+
+  .game-controls button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .game-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
-.game-error {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #d32f2f;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-}
+@media (max-width: 640px) {
+  .game-table {
+    padding: 1.5rem 0.5rem 3rem 0.5rem;
+  }
 
-.game-result {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #1976d2;
-  color: white;
-  padding: 15px 20px;
-  border-radius: 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  max-width: 300px;
-  text-align: center;
-}
+  .dealer-area h3,
+  .player-area h3 {
+    font-size: 1rem;
+  }
 
-.game-result h3 {
-  margin: 0 0 10px;
-  font-size: 18px;
-}
+  .game-card {
+    width: 50px;
+    height: 75px;
+  }
 
-.game-result p {
-  margin: 0;
-  font-size: 14px;
+  .game-controls {
+    gap: 0.5rem;
+  }
+
+  .game-controls button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
 }

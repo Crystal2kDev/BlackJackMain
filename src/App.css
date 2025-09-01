@@ -2,8 +2,8 @@ body {
   margin: 0;
   padding: 0;
   width: 100vw;
-  font-family: 'Arial', sans-serif;
-  background: linear-gradient(to bottom, #3a4b5c, #1a2632);
+  font-family: 'Montserrat', sans-serif;
+  background: #131c27;
   overflow-x: hidden;
 }
 
@@ -11,13 +11,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: linear-gradient(to bottom, #3a4b5c, #1a2632);
+  background: #131c27;
 }
 
-::-webkit-scrollbar {
-  display: none;
-}
-
+/* Анимации переходов между страницами */
 .page-enter {
   opacity: 0;
   transform: translateX(100%);
@@ -38,4 +35,8 @@ body {
   opacity: 0;
   transform: translateX(-100%);
   transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+::-webkit-scrollbar {
+  display: none;
 }

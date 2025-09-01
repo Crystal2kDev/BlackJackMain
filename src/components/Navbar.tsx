@@ -1,39 +1,32 @@
-import { NavLink } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import '../styles/Navbar.css';
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  onLoginClick?: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onLoginClick }) => {
+  const links = [
+    { name: 'Главная', path: '/' },
+    { name: 'Игра', path: '/game' },
+    { name: 'FAQ', path: '/faq' },
+  ];
+
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <NavLink to="/" className="navbar-logo">
-          BlackJack
-        </NavLink>
+        <div className="navbar-logo">
+          <Link to="/">BlackJack</Link>
+        </div>
         <div className="navbar-links">
-          <NavLink
-            to="/game"
-            className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
-          >
-            <motion.span whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-              Играть
-            </motion.span>
-          </NavLink>
-          <NavLink
-            to="/faq"
-            className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
-          >
-            <motion.span whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-              FAQ
-            </motion.span>
-          </NavLink>
-          <NavLink
-            to="/login"
-            className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
-          >
-            <motion.span whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-              Войти
-            </motion.span>
-          </NavLink>
+          {links.map((link) => (
+            <Link key={link.name} to={link.path}>
+              {link.name}
+            </Link>
+          ))}
+          <button className="navbar-login-button" onClick={onLoginClick}>
+            Войти
+          </button>
         </div>
       </div>
     </nav>

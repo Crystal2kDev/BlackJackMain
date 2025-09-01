@@ -2,6 +2,7 @@
   "name": "blackjack-backend",
   "version": "1.0.0",
   "description": "Backend for BlackJackMain",
+  "type": "module",
   "main": "server.ts",
   "scripts": {
     "start": "ts-node -r tsconfig-paths/register server.ts"
