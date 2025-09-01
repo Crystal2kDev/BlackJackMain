@@ -1,186 +1,475 @@
-/* Общий фон и контейнер */
+/* src/styles/Game.css (updated) */
+
+/* Базовые обёртки */
 .game {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: calc(100vh - 64px);
-  background: linear-gradient(to bottom, #0f172a, #1e293b);
-  padding: 2rem;
-  font-family: 'Inter', sans-serif;
-  color: #fff;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+  color: #e6eef6;
+  font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
 }
 
-/* Ошибки и результаты */
-.game-error {
-  position: absolute;
-  top: 80px;
-  background: #dc2626;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  color: #fff;
-  font-weight: 500;
-  z-index: 100;
-}
-
-.game-result {
-  position: absolute;
-  top: 120px;
-  right: 2rem;
-  background: #2563eb;
-  padding: 1rem 1.5rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-  z-index: 100;
-  text-align: center;
-}
-
-/* Основной стол */
+/* Ограничитель ширины (центрирование контента) */
 .game-table-wrapper {
   width: 100%;
   max-width: 1200px;
-  display: flex;
-  justify-content: center;
+  margin: 0 auto;
+  position: relative;
 }
 
+/* Ошибки/уведомления */
+.game-error {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg,#b91c1c,#ef4444);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  z-index: 1200;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+
+/* Результат в углу */
+.game-result {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(180deg,#0ea5b7,#0077b6);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 8px;
+  z-index: 1300;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+
+/* ---------- Полукруглый стол ---------- */
 .game-table {
   position: relative;
   width: 100%;
-  background: radial-gradient(circle at 50% 0%, #0f172a 0%, #1e293b 100%);
-  border-radius: 50% / 10%;
-  padding: 2rem 1rem 4rem 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  height: 640px; /* можно подправить под дизайн */
+  display: block;
+  overflow: visible;
+  margin-top: 20px;
+  background: radial-gradient(1200px 600px at 50% 20%, rgba(255,255,255,0.02), rgba(0,0,0,0) 40%),
+              linear-gradient(180deg, rgba(20,30,40,0.12), rgba(10,15,20,0.06));
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  box-shadow: 0 14px 40px rgba(8,12,16,0.6), inset 0 -10px 40px rgba(0,0,0,0.4);
+  padding-bottom: 40px;
 }
 
-/* Башмак */
-.shoe {
+/* Central semi-table highlight (darker center) */
+.game-table::before {
+  content: "";
   position: absolute;
-  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
+  bottom: -8%;
+  width: 92%;
+  height: 70%;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  pointer-events: none;
+  background: radial-gradient(600px 280px at 50% 18%, rgba(0,0,0,0.12), rgba(0,0,0,0.28) 40%, rgba(0,0,0,0.45) 100%);
+  mix-blend-mode: multiply;
+  z-index: 1;
 }
 
-/* Дилер */
-.dealer-area {
+/* Shoe (башмак) рядом с центром стола */
+.shoe {
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
+}
+
+/* ---------- Dealer avatar ---------- */
+.dealer-avatar-wrapper {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 2rem;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+}
+
+.dealer-avatar {
+  width: 110px;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.02) inset;
+  transition: transform 300ms ease, box-shadow 300ms ease, filter 300ms ease;
+  transform-origin: center;
+  z-index: 50;
+}
+
+.dealer-avatar:hover {
+  transform: translateY(-6px) scale(1.02);
+  filter: saturate(1.05);
+}
+
+/* Dealer area label and cards */
+.dealer-area {
+  position: absolute;
+  top: 180px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  width: 100%;
+  max-width: 720px;
+  text-align: center;
+  pointer-events: none;
 }
 
 .dealer-area h3 {
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
+  margin: 0 0 8px 0;
+  color: #dbeafe;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.6);
 }
 
+/* Row of dealer cards (centered) */
 .cards-row {
   display: flex;
-  gap: 0.5rem;
   justify-content: center;
-}
-
-/* Игровые карты */
-.game-card {
-  width: 80px;
-  height: 120px;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  object-fit: cover;
-}
-
-/* Игроки */
-.player-area {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  margin-top: 2rem;
+  gap: 10px;
+  margin-top: 6px;
+  pointer-events: none;
 }
 
-.player-area h3 {
-  margin-bottom: 0.5rem;
+/* Card styling */
+.game-card {
+  width: 96px;
+  height: 144px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(2,6,12,0.6);
+  transition: transform 280ms ease, box-shadow 280ms ease;
+  transform-origin: center bottom;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-/* Контролы */
-.game-controls {
+/* hover (если пользователь наведёт на карту) — только в десктопе */
+@media (hover: hover) {
+  .game-card:hover {
+    transform: translateY(-8px) rotate(-1deg);
+    box-shadow: 0 18px 44px rgba(0,0,0,0.65);
+  }
+}
+
+/* ---------- Players: позиционирование по дуге стола ---------- */
+.game-players {
+  position: absolute;
+  bottom: 36px; /* под дугой */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1100px;
+  z-index: 30;
+  display: block;
+  pointer-events: none;
+}
+
+/* общий стиль для зоны игрока */
+.player-area {
+  position: absolute;
+  bottom: 8px;
+  width: 260px;
+  text-align: center;
+  pointer-events: auto; /* чтобы кнопки/интерактив могли быть кликабельны внутри этой зоны при необходимости */
+  transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 220ms cubic-bezier(.2,.9,.3,1), filter 220ms ease;
+  will-change: transform, box-shadow;
+  z-index: 30;
+}
+
+/* конкретные позиции для 1-3 игроков */
+.player-1 { left: 6%; transform: translateX(0); }   /* левый */
+.player-2 { left: 50%; transform: translateX(-50%); } /* центр */
+.player-3 { right: 6%; transform: translateX(0); }  /* правый */
+
+/* адаптивные поправки — в мобильной верстке игроки в линию */
+@media (max-width: 880px) {
+  .player-1 { left: 8%; }
+  .player-2 { left: 50%; transform: translateX(-50%); }
+  .player-3 { right: 8%; }
+  .game-card { width: 76px; height: 114px; }
+  .player-area { width: 160px; }
+}
+
+/* player avatar + name row */
+.player-top {
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  pointer-events: none;
+  position: relative;
 }
 
-.game-controls button {
-  background: linear-gradient(to bottom, #1e40af, #3b82f6);
+.player-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  box-shadow: 0 8px 22px rgba(0,0,0,0.5);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+/* Slight hover lift on avatar (desktop) */
+@media (hover: hover) {
+  .player-avatar:hover { transform: translateY(-4px); }
+}
+
+/* ---------- Controls ---------- */
+.game-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* Стили кнопок ставок и управления */
+.bet-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  background: linear-gradient(180deg,#0ea5b7,#0077b6);
   color: #fff;
   border: none;
-  border-radius: 0.5rem;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
 }
 
-.game-controls button:hover {
-  background: #2563eb;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.5);
+/* Общая кнопка (Сброс/Старт/Hit etc) */
+.game-button {
+  padding: 10px 14px;
+  background: linear-gradient(180deg,#1f2937,#111827);
+  color: #e6eef6;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
-.game-controls button:disabled {
-  background: #475569;
+.bet-button:disabled,
+.game-button:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  filter: grayscale(0.35);
 }
 
-/* Информация */
+.bet-button:hover:not(:disabled),
+.game-button:hover:not(:disabled) {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.5);
+}
+
+/* ---------- Chip icons: размеры и анимации ---------- */
+
+.chip-btn-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.chip-icon-inline {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+  transition: transform 260ms ease, opacity 260ms ease;
+}
+
+.chip-pulse {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.5));
+  will-change: transform, opacity;
+}
+
+.bet-chip-anim {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ---------- Инфо (Фишки / Ставка) ---------- */
 .game-info {
-  margin-top: 1.5rem;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 80;
+  text-align: right;
+  color: #d1e8f5;
+  pointer-events: none;
+}
+
+.game-info p {
+  margin: 6px 0;
   display: flex;
-  gap: 2rem;
-  font-size: 1rem;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  font-weight: 600;
 }
 
-/* Адаптив */
-@media (max-width: 1024px) {
-  .game-card {
-    width: 60px;
-    height: 90px;
-  }
+.chips-line span,
+.bet-line span {
+  font-size: 0.98rem;
+}
 
-  .game-controls button {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-  }
-
+/* responsive: перенос game-info вниз на мобильных ширинах */
+@media (max-width: 780px) {
   .game-info {
-    flex-direction: column;
-    gap: 0.5rem;
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-top: 10px;
+    text-align: center;
   }
 }
 
-@media (max-width: 640px) {
-  .game-table {
-    padding: 1.5rem 0.5rem 3rem 0.5rem;
-  }
+/* ---------- Highlight: текущий игрок ("Ваш ход") ---------- */
 
-  .dealer-area h3,
-  .player-area h3 {
-    font-size: 1rem;
-  }
-
-  .game-card {
-    width: 50px;
-    height: 75px;
-  }
-
-  .game-controls {
-    gap: 0.5rem;
-  }
-
-  .game-controls button {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-  }
+/* Сама зона игрока подсвечивается и немного приподнимается */
+.player-area.current {
+  transform: translateY(-10px) scale(1.02);
+  z-index: 80;
+  filter: drop-shadow(0 18px 44px rgba(0,120,200,0.25));
+  box-shadow: 0 18px 40px rgba(0,120,200,0.16);
 }
+
+/* Glow ring (soft radial) behind current player's area */
+.player-area.current::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(14,165,183,0.14), rgba(14,165,183,0.06) 40%, transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Акцент на аватаре текущего игрока */
+.player-area.current .player-avatar {
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 14px 34px rgba(0,120,200,0.28);
+  border: 2px solid rgba(14,165,183,0.12);
+}
+
+/* Подсветка имени/очки */
+.player-area.current .player-top h3 {
+  color: #d7f9ff;
+  text-shadow: 0 6px 18px rgba(0,120,200,0.18);
+}
+
+/* Бейдж "Ваш ход" — позиционируется относительно .player-top */
+.player-turn-badge {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%) scale(1);
+  background: linear-gradient(180deg,#0ea5b7,#0284c7);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(2,6,20,0.45);
+  pointer-events: none;
+  z-index: 120;
+  opacity: 0;
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(.2,.9,.3,1), opacity 220ms ease;
+}
+
+/* показываем бейдж с эффектом появления */
+.player-area.current .player-turn-badge {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  animation: badgePop 420ms cubic-bezier(.2,.9,.3,1);
+}
+
+@keyframes badgePop {
+  0% { transform: translateX(-50%) translateY(-6px) scale(0.88); opacity: 0; }
+  60% { transform: translateX(-50%) translateY(2px) scale(1.06); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
+/* Визуальная подсказка для вашего собственного игрока (you) */
+.player-area.you .player-avatar {
+  outline: 2px solid rgba(99,102,241,0.12);
+  box-shadow: 0 10px 30px rgba(99,102,241,0.12);
+  transition: box-shadow 260ms ease, transform 260ms ease;
+}
+
+/* Если вы — текущий игрок, комбинируем стили */
+.player-area.you.current .player-avatar {
+  outline-color: rgba(14,165,183,0.18);
+  box-shadow: 0 18px 40px rgba(14,165,183,0.18);
+}
+
+/* ---------- Мелкие улучшения: плавности ---------- */
+.game-card,
+.dealer-avatar,
+.player-avatar,
+.chip-btn-icon,
+.chip-icon-inline,
+.chip-pulse {
+  transition-timing-function: cubic-bezier(.2,.9,.3,1);
+}
+
+/* уменьшение высоты стола на очень маленьких экранах */
+@media (max-width: 420px) {
+  .game-table { height: 520px; }
+  .dealer-avatar-wrapper { width: 100px; height: 100px; top: 10px; }
+  .dealer-avatar { width: 86px; }
+  .player-avatar { width: 52px; height: 52px; }
+  .game-card { width: 64px; height: 96px; }
+  .bet-button { padding: 8px 10px; }
+  .chip-btn-icon { width: 18px; height: 18px; }
+  .chip-pulse { width: 22px; height: 22px; }
+}
+
+/* End of Game.css */

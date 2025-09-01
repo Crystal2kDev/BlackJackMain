@@ -14,21 +14,39 @@ const Landing: React.FC = () => {
   ];
 
   const steps = [
-    { icon: '🃏', heading: 'Создайте аккаунт', text: 'Регистрация занимает всего пару минут, чтобы начать играть.' },
-    { icon: '💰', heading: 'Пополните баланс', text: 'Пополните счет и получите стартовые фишки для игры.' },
-    { icon: '🎮', heading: 'Начните играть', text: 'Выбирайте игру, участвуйте в турнирах и выигрывайте.' }
+    {
+      icon: '🃏',
+      heading: 'Создайте аккаунт',
+      text: 'Регистрация занимает всего пару минут — сохраните прогресс и заходите в игру с любого устройства.',
+    },
+    {
+      icon: '🎁',
+      heading: 'Получите бесплатные фишки',
+      text: 'Мы дарим стартовый набор фишек — начните играть без вложений и исследуйте разные режимы.',
+    },
+    {
+      icon: '🎮',
+      heading: 'Начните играть',
+      text: 'Выбирайте стол, участвуйте в турнирах и повышайте рейтинг — всё внутри игры, без реальных выплат.',
+    },
   ];
 
   return (
     <div className="landing">
       <div className="landing-hero">
         <div className="landing-text">
-          <h1 className="landing-text-title">BlackJack <span>Online</span></h1>
+          <h1 className="landing-text-title">
+            BlackJack <span>Online</span>
+          </h1>
           <p className="landing-text-description">
             Присоединяйтесь к увлекательной онлайн-настольной игре! Соревнуйтесь с другими игроками, участвуйте в турнирах и получайте бонусы за VIP-подписку.
           </p>
           <Link to="/game">
-            <motion.button className="landing-button" whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
+            <motion.button
+              className="landing-button"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
               Начать игру
             </motion.button>
           </Link>
@@ -61,7 +79,13 @@ const Landing: React.FC = () => {
         <h2 className="landing-steps-title">Как начать играть?</h2>
         <div className="landing-steps-grid">
           {steps.map((step, index) => (
-            <motion.div key={index} className="landing-step" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.2 }}>
+            <motion.div
+              key={index}
+              className="landing-step"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.2 }}
+            >
               <div className="landing-step-icon">{step.icon}</div>
               <h3 className="landing-step-heading">{step.heading}</h3>
               <p className="landing-step-text">{step.text}</p>

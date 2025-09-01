@@ -1,3 +1,4 @@
+// backend/server.ts
 import express from 'express';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
@@ -97,18 +98,30 @@ io.on('connection', (socket: Socket) => {
       socket.emit('error', { message: 'Комната не существует' });
       return;
     }
-    if (rooms[roomId].players.length >= 3) {
+    const existingIndex = rooms[roomId].players.findIndex(p => p.id === socket.id);
+    if (existingIndex === -1 && rooms[roomId].players.length >= 3) {
       socket.emit('error', { message: 'Комната заполнена (максимум 3 игрока)' });
       return;
     }
-    rooms[roomId].players.push({
-      id: socket.id,
-      cards: [],
-      points: 0,
-      bet: 0,
-      chips: 1000,
-    });
+
+    if (!rooms[roomId].players.find(p => p.id === socket.id)) {
+      rooms[roomId].players.push({
+        id: socket.id,
+        cards: [],
+        points: 0,
+        bet: 0,
+        chips: 1000,
+      });
+    } else {
+      const p = rooms[roomId].players.find(p => p.id === socket.id)!;
+      p.cards = [];
+      p.points = 0;
+      p.bet = 0;
+    }
+
     socket.join(roomId);
+    console.log(`Player ${socket.id} joined room ${roomId}. Players now: ${rooms[roomId].players.length}`);
+
     io.to(roomId).emit('gameUpdate', {
       stateId: rooms[roomId].stateId,
       dealerCards: rooms[roomId].dealer.cards,
@@ -161,14 +174,26 @@ io.on('connection', (socket: Socket) => {
 
   socket.on('startGame', () => {
     const roomId = 'defaultRoom';
+    const caller = rooms[roomId].players.find(p => p.id === socket.id);
+    if (!caller) {
+      socket.emit('error', { message: 'Вы не участвуете в игре' });
+      console.log('StartGame denied: caller not in players', socket.id);
+      return;
+    }
+    if (caller.bet <= 0) {
+      socket.emit('error', { message: 'Вы должны поставить, чтобы начать игру' });
+      console.log('StartGame denied: caller has no bet', socket.id);
+      return;
+    }
+
     const activePlayers = rooms[roomId].players.filter(p => p.bet > 0);
-    if (activePlayers.length > 0) {
-      console.log('Starting game with active players:', activePlayers.map(p => ({ id: p.id, bet: p.bet })));
+    if (activePlayers.length > 0 && rooms[roomId].state === 'betting') {
+      console.log('Starting game with active players (triggered by):', { by: socket.id, activePlayers: activePlayers.map(p => ({ id: p.id, bet: p.bet })) });
       rooms[roomId].state = 'dealing';
       dealCards(roomId);
     } else {
-      socket.emit('error', { message: 'Хотя бы один игрок должен сделать ставку' });
-      console.log('Start game failed: no players with bets');
+      socket.emit('error', { message: 'Нельзя начать игру в текущем статусе' });
+      console.log('Start game failed: no players with bets or wrong state', { state: rooms[roomId].state, activeCount: activePlayers.length });
     }
   });
 
@@ -230,7 +255,50 @@ io.on('connection', (socket: Socket) => {
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     const roomId = 'defaultRoom';
+    const wasInRoom = rooms[roomId].players.some(p => p.id === socket.id);
+
+    // remove the player
     rooms[roomId].players = rooms[roomId].players.filter(p => p.id !== socket.id);
+
+    // If the game was in progress (not betting), reset the round so a reconnecting player won't see a stuck game
+    if (wasInRoom && rooms[roomId].state !== 'betting') {
+      console.log('Player left during a round — resetting current round to betting state:', socket.id);
+
+      // Refund active bets to remaining players and clear hands
+      rooms[roomId].players.forEach(p => {
+        if (p.bet > 0) {
+          p.chips += p.bet; // refund
+          p.bet = 0;
+        }
+        p.cards = [];
+        p.points = 0;
+      });
+
+      // Clear dealer
+      rooms[roomId].dealer.cards = [];
+      rooms[roomId].dealer.points = 0;
+
+      // Reset room state
+      rooms[roomId].state = 'betting';
+      rooms[roomId].currentPlayer = 0;
+      rooms[roomId].deck = [];
+      rooms[roomId].stateId++;
+
+      // Notify everyone in the room about the reset state
+      io.to(roomId).emit('gameUpdate', {
+        stateId: rooms[roomId].stateId,
+        dealerCards: rooms[roomId].dealer.cards,
+        players: rooms[roomId].players,
+        chips: rooms[roomId].players.find(p => p.id !== socket.id)?.chips || 1000,
+        bet: 0,
+        status: rooms[roomId].state,
+        dealerPoints: rooms[roomId].dealer.points,
+      });
+
+      return;
+    }
+
+    // If game was not in-progress, just emit updated player list/status
     io.to(roomId).emit('gameUpdate', {
       stateId: ++rooms[roomId].stateId,
       dealerCards: rooms[roomId].dealer.cards,
@@ -251,7 +319,7 @@ io.on('connection', (socket: Socket) => {
       setTimeout(() => {
         player.cards = [rooms[roomId].deck.splice(Math.floor(Math.random() * rooms[roomId].deck.length), 1)[0]];
         player.points = calculatePoints(player.cards);
-        console.log('Dealing to player:', { playerId: player.id, card: player.cards[0].name, image: player.cards[0].image, points: player.points });
+        console.log('Dealing to player (1):', { playerId: player.id, card: player.cards[0].name, points: player.points });
         io.to(roomId).emit('gameUpdate', {
           stateId: ++rooms[roomId].stateId,
           dealerCards: rooms[roomId].dealer.cards,
@@ -266,7 +334,7 @@ io.on('connection', (socket: Socket) => {
       setTimeout(() => {
         player.cards.push(rooms[roomId].deck.splice(Math.floor(Math.random() * rooms[roomId].deck.length), 1)[0]);
         player.points = calculatePoints(player.cards);
-        console.log('Dealing to player:', { playerId: player.id, card: player.cards[1].name, image: player.cards[1].image, points: player.points });
+        console.log('Dealing to player (2):', { playerId: player.id, card: player.cards[1].name, points: player.points });
         io.to(roomId).emit('gameUpdate', {
           stateId: ++rooms[roomId].stateId,
           dealerCards: rooms[roomId].dealer.cards,
@@ -279,10 +347,12 @@ io.on('connection', (socket: Socket) => {
       }, delay);
       delay += 300;
     });
+
+    // dealer first card
     setTimeout(() => {
       rooms[roomId].dealer.cards = [rooms[roomId].deck.splice(Math.floor(Math.random() * rooms[roomId].deck.length), 1)[0]];
       rooms[roomId].dealer.points = calculatePoints(rooms[roomId].dealer.cards);
-      console.log('Dealing to dealer:', { card: rooms[roomId].dealer.cards[0].name, image: rooms[roomId].dealer.cards[0].image, points: rooms[roomId].dealer.points });
+      console.log('Dealing to dealer (1):', { card: rooms[roomId].dealer.cards[0].name, points: rooms[roomId].dealer.points });
       io.to(roomId).emit('gameUpdate', {
         stateId: ++rooms[roomId].stateId,
         dealerCards: rooms[roomId].dealer.cards,
@@ -294,12 +364,16 @@ io.on('connection', (socket: Socket) => {
       });
     }, delay);
     delay += 300;
+
+    // dealer second card -> AFTER THIS: set state to 'playing' so players can act
     setTimeout(() => {
       rooms[roomId].dealer.cards.push(rooms[roomId].deck.splice(Math.floor(Math.random() * rooms[roomId].deck.length), 1)[0]);
       rooms[roomId].dealer.points = calculatePoints(rooms[roomId].dealer.cards);
+      // IMPORTANT: set to 'playing' so clients show Hit/Stand
       rooms[roomId].state = 'playing';
       rooms[roomId].currentPlayer = 0;
-      console.log('Dealing to dealer:', { card: rooms[roomId].dealer.cards[1].name, image: rooms[roomId].dealer.cards[1].image, points: rooms[roomId].dealer.points });
+      console.log('Dealing to dealer (2):', { card: rooms[roomId].dealer.cards[1].name, points: rooms[roomId].dealer.points, state: rooms[roomId].state });
+
       io.to(roomId).emit('gameUpdate', {
         stateId: ++rooms[roomId].stateId,
         dealerCards: rooms[roomId].dealer.cards,
@@ -313,47 +387,15 @@ io.on('connection', (socket: Socket) => {
   };
 
   const dealerTurn = (roomId: string) => {
+    // Dealer draws until 17+, then reveal, wait, then compute results
     while (rooms[roomId].dealer.points < 17) {
       rooms[roomId].dealer.cards.push(rooms[roomId].deck.splice(Math.floor(Math.random() * rooms[roomId].deck.length), 1)[0]);
       rooms[roomId].dealer.points = calculatePoints(rooms[roomId].dealer.cards);
-      console.log('Dealer turn:', { card: rooms[roomId].dealer.cards[rooms[roomId].dealer.cards.length - 1].name, image: rooms[roomId].dealer.cards[rooms[roomId].dealer.cards.length - 1].image, points: rooms[roomId].dealer.points });
+      console.log('Dealer drawing:', { card: rooms[roomId].dealer.cards[rooms[roomId].dealer.cards.length - 1].name, points: rooms[roomId].dealer.points });
     }
-    rooms[roomId].state = 'results';
-    const activePlayers = rooms[roomId].players.filter(p => p.bet > 0);
-    activePlayers.forEach(player => {
-      let result: string, message: string;
-      if (player.points > 21) {
-        result = 'lose';
-        message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} проиграл: перебор (${player.points})`;
-      } else if (rooms[roomId].dealer.points > 21) {
-        result = 'win';
-        message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} выиграл: дилер перебрал (${rooms[roomId].dealer.points})`;
-        player.chips += player.bet * 2;
-      } else if (player.points > rooms[roomId].dealer.points) {
-        result = 'win';
-        message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} выиграл: ${player.points} против ${rooms[roomId].dealer.points}`;
-        player.chips += player.bet * 2;
-      } else if (player.points === rooms[roomId].dealer.points) {
-        result = 'draw';
-        message = `Игрок ${rooms[roomId].players.indexOf(player) + 1}: ничья (${player.points})`;
-        player.chips += player.bet;
-      } else {
-        result = 'lose';
-        message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} проиграл: ${player.points} против ${rooms[roomId].dealer.points}`;
-      }
-      io.to(player.id).emit('gameResult', { result, message });
-    });
-    rooms[roomId].players.forEach(player => {
-      player.cards = [];
-      player.points = 0;
-      if (player.bet > 0) {
-        player.bet = 0;
-      }
-    });
-    rooms[roomId].dealer.cards = [];
-    rooms[roomId].dealer.points = 0;
-    rooms[roomId].state = 'betting';
-    console.log('Resetting game state');
+
+    // Tell clients dealer completed drawing and reveal points
+    rooms[roomId].state = 'dealerTurn';
     io.to(roomId).emit('gameUpdate', {
       stateId: ++rooms[roomId].stateId,
       dealerCards: rooms[roomId].dealer.cards,
@@ -363,6 +405,61 @@ io.on('connection', (socket: Socket) => {
       status: rooms[roomId].state,
       dealerPoints: rooms[roomId].dealer.points,
     });
+
+    // Wait so clients can show dealer's points/animations, then compute results
+    const RESULT_DELAY_MS = 1800;
+    setTimeout(() => {
+      rooms[roomId].state = 'results';
+      const activePlayers = rooms[roomId].players.filter(p => p.bet > 0);
+
+      activePlayers.forEach(player => {
+        let result: string, message: string;
+        if (player.points > 21) {
+          result = 'lose';
+          message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} проиграл: перебор (${player.points})`;
+        } else if (rooms[roomId].dealer.points > 21) {
+          result = 'win';
+          message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} выиграл: дилер перебрал (${rooms[roomId].dealer.points})`;
+          player.chips += player.bet * 2;
+        } else if (player.points > rooms[roomId].dealer.points) {
+          result = 'win';
+          message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} выиграл: ${player.points} против ${rooms[roomId].dealer.points}`;
+          player.chips += player.bet * 2;
+        } else if (player.points === rooms[roomId].dealer.points) {
+          result = 'draw';
+          message = `Игрок ${rooms[roomId].players.indexOf(player) + 1}: ничья (${player.points})`;
+          player.chips += player.bet;
+        } else {
+          result = 'lose';
+          message = `Игрок ${rooms[roomId].players.indexOf(player) + 1} проиграл: ${player.points} против ${rooms[roomId].dealer.points}`;
+        }
+        io.to(player.id).emit('gameResult', { result, message });
+      });
+
+      // Cleanup for next round
+      rooms[roomId].players.forEach(player => {
+        player.cards = [];
+        player.points = 0;
+        if (player.bet > 0) {
+          player.bet = 0;
+        }
+      });
+      rooms[roomId].dealer.cards = [];
+      rooms[roomId].dealer.points = 0;
+      rooms[roomId].state = 'betting';
+
+      console.log('Resetting game state after results');
+
+      io.to(roomId).emit('gameUpdate', {
+        stateId: ++rooms[roomId].stateId,
+        dealerCards: rooms[roomId].dealer.cards,
+        players: rooms[roomId].players,
+        chips: rooms[roomId].players.find(p => p.id === socket.id)?.chips || 1000,
+        bet: rooms[roomId].players.find(p => p.id === socket.id)?.bet || 0,
+        status: rooms[roomId].state,
+        dealerPoints: rooms[roomId].dealer.points,
+      });
+    }, RESULT_DELAY_MS);
   };
 });
 

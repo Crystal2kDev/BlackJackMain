@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Game from './pages/Game';
 import FAQ from './pages/FAQ';
+import Login from './pages/Login';
 import Navbar from './components/Navbar';
 import './styles/navbar.css';
 import './styles/faq.css';
@@ -18,6 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<Landing />} />
         <Route path="/game" element={<Game />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/login" element={<Login/>}/>
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
