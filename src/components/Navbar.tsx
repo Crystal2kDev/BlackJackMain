@@ -1,3 +1,4 @@
+// src/components/Navbar.tsx (или src/pages/Navbar.tsx — вставьте в тот же путь, где у вас был)
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import '../styles/Navbar.css';
@@ -5,6 +6,7 @@ import '../styles/Navbar.css';
 const links = [
   { name: 'Главная', path: '/' },
   { name: 'Игра', path: '/lobby' },
+  { name: 'Магазин', path: '/store' },
   { name: 'FAQ', path: '/faq' },
 ];
 

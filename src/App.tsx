@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
 import Game from './pages/Game';
+import Store from './pages/Store';
 import FAQ from './pages/FAQ';
 import Login from './pages/Login';
 import './styles/App.css';

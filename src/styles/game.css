@@ -163,6 +163,9 @@
   transform-origin: center bottom;
   user-select: none;
   -webkit-user-drag: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
 /* hover (если пользователь наведёт на карту) — только в десктопе */
@@ -197,9 +200,9 @@
 }
 
 /* конкретные позиции для 1-3 игроков */
-.player-1 { left: 6%; transform: translateX(0); }   /* левый */
-.player-2 { left: 50%; transform: translateX(-50%); } /* центр */
-.player-3 { right: 6%; transform: translateX(0); }  /* правый */
+.player-1 { left: 6%; transform: translateX(0); }
+.player-2 { left: 50%; transform: translateX(-50%); }
+.player-3 { right: 6%; transform: translateX(0); }
 
 /* адаптивные поправки */
 @media (max-width: 880px) {
@@ -237,27 +240,23 @@
 
 /* ----- ПОДСВЕТКА ТЕКУЩЕГО ИГРОКА ----- */
 
-/* glow / lift for active player container */
 .player-area.player-active {
   transform: translateY(-6px);
-  z-index: 80; /* поднять выше остальных */
+  z-index: 80;
   filter: saturate(1.04);
 }
 
-/* subtle elevated shadow for the whole player's cards block */
 .player-area.player-active .cards-row .game-card {
   box-shadow: 0 20px 50px rgba(2,6,12,0.65);
   transform: translateY(-6px);
 }
 
-/* avatar highlight and ring */
 .player-area.player-active .player-avatar {
   transform: translateY(-6px) scale(1.02);
   box-shadow: 0 18px 40px rgba(6, 120, 255, 0.22), 0 6px 16px rgba(0,0,0,0.5);
   border: 1px solid rgba(10,130,255,0.10);
 }
 
-/* animated ring around avatar */
 .player-area.player-active .player-avatar::after {
   content: "";
   position: absolute;
@@ -273,14 +272,12 @@
   z-index: -1;
 }
 
-/* ring keyframes */
 @keyframes pulse-ring {
   0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
   50% { transform: translate(-50%, -50%) scale(1.07); opacity: 0.4; }
   100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
 }
 
-/* badge "Ваш ход" / "Ход игрока" */
 .your-turn-badge {
   display: inline-block;
   background: linear-gradient(90deg,#0ea5e9,#0ea5b7);
@@ -295,7 +292,6 @@
   pointer-events: none;
 }
 
-/* небольшое изменение цвета имени когда ход игрока */
 .player-area.player-active h3,
 .player-area.player-active .your-turn-badge {
   color: #eaf6ff;
@@ -315,7 +311,6 @@
   pointer-events: auto;
 }
 
-/* Стили кнопок ставок и управления */
 .bet-button {
   display: inline-flex;
   align-items: center;
@@ -331,7 +326,6 @@
   box-shadow: 0 8px 20px rgba(0,0,0,0.45);
 }
 
-/* Общая кнопка (Сброс/Старт/Hit etc) */
 .game-button {
   padding: 10px 14px;
   background: linear-gradient(180deg,#1f2937,#111827);
@@ -419,7 +413,6 @@
   font-size: 0.98rem;
 }
 
-/* responsive: перенос game-info вниз на мобильных ширинах */
 @media (max-width: 780px) {
   .game-info {
     position: relative;
@@ -442,13 +435,72 @@ p { color: #cfeaff; }
   transition-timing-function: cubic-bezier(.2,.9,.3,1);
 }
 
-/* уменьшение высоты стола на очень маленьких экранах */
+/* Flip helpers for first dealer card:
+   - Back is visible during dealing/playing and static (rotateY:0)
+   - On reveal (dealerTurn/results) back animates rotateY->180 & opacity->0
+   - Front is rotated away and opacity:0 until reveal, then rotates to 0 and becomes visible
+*/
+
+.card-flip-wrapper {
+  display: inline-block;
+  position: relative;
+  width: 96px;
+  height: 144px;
+  margin-right: 6px;
+}
+
+.card-flip-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 900px;
+}
+
+.card-flip-container .game-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* BACK: visible by default during dealing/playing */
+.card-flip-container .card-back {
+  z-index: 2;
+  transform: rotateY(0deg);
+  opacity: 1; /* visible until reveal */
+}
+
+/* FRONT: rotated away and hidden until reveal */
+.card-flip-container .card-front {
+  z-index: 1;
+  transform: rotateY(-180deg);
+  opacity: 0;
+}
+
+/* Players area */
+.game-players {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.player-area { background: rgba(255,255,255,0.01); padding: 10px; border-radius: 10px; }
+
+/* responsive small screens */
 @media (max-width: 420px) {
   .game-table { height: 520px; }
   .dealer-avatar-wrapper { width: 100px; height: 100px; top: 10px; }
   .dealer-avatar { width: 86px; }
   .player-avatar { width: 52px; height: 52px; }
   .game-card { width: 64px; height: 96px; }
+  .card-flip-wrapper { width: 64px; height: 96px; }
   .bet-button { padding: 8px 10px; }
   .chip-btn-icon { width: 18px; height: 18px; }
   .chip-pulse { width: 22px; height: 22px; }

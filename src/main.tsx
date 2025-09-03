@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Lobby from './pages/Lobby';
 import Game from './pages/Game';
+import Store from './pages/Store';
 import FAQ from './pages/FAQ';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/game" element={<Game />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/store" element={<Store />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
