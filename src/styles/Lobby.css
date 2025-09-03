@@ -1,0 +1,130 @@
+/* Lobby.css — стилистика под сайт (градиенты, плавные тени) */
+
+.lobby-page {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  font-family: 'Inter', sans-serif;
+  color: #eaf6ff;
+  background: transparent;
+}
+
+.lobby-card {
+  width: 100%;
+  max-width: 1100px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 18px 40px rgba(3,6,12,0.6);
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.lobby-card h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.8rem;
+  color: #ffffff;
+  text-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+
+.lobby-sub {
+  margin: 0 0 18px 0;
+  color: #b9cfe0;
+  font-size: 0.98rem;
+}
+
+.lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 12px;
+}
+
+/* option card */
+.lobby-option {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding: 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.03);
+  transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+
+.lobby-option.disabled {
+  opacity: 0.75;
+  filter: grayscale(0.06);
+  cursor: pointer; /* still clickable so user sees placeholder */
+}
+
+.lobby-option .option-icon {
+  font-size: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+}
+
+.lobby-option h3 {
+  margin: 2px 0;
+  color: #f8feff;
+  font-size: 1.05rem;
+}
+
+.lobby-option p {
+  margin: 0;
+  color: #b7d1e6;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.option-cta {
+  margin-top: auto;
+  align-self: flex-end;
+  padding: 8px 12px;
+  font-weight: 700;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #0ea5b7, #0077b6);
+  color: white;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  transition: transform 160ms ease;
+}
+
+.lobby-option:hover .option-cta {
+  transform: translateY(-3px);
+}
+
+/* subtle hover on whole card */
+.lobby-option:hover {
+  box-shadow: 0 18px 44px rgba(0,0,0,0.55);
+}
+
+/* footer */
+.lobby-footer {
+  margin-top: 16px;
+  color: #9fb8cf;
+  font-size: 0.85rem;
+}
+
+/* responsive */
+@media (max-width: 720px) {
+  .lobby-card {
+    padding: 1.25rem;
+  }
+  .lobby-grid {
+    gap: 0.85rem;
+  }
+  .option-cta {
+    padding: 8px 10px;
+  }
+}

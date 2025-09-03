@@ -4,7 +4,7 @@ import '../styles/Navbar.css';
 
 const links = [
   { name: 'Главная', path: '/' },
-  { name: 'Игра', path: '/game' },
+  { name: 'Игра', path: '/lobby' },
   { name: 'FAQ', path: '/faq' },
 ];
 

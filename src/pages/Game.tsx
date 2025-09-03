@@ -2,52 +2,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ioClient from 'socket.io-client';
+import { useSearchParams } from 'react-router-dom';
 import '../styles/Game.css';
 
 const SOCKET_URL = 'http://localhost:3000';
 
-interface Card {
-  name: string;
-  image: string;
-  value: number;
-}
-
-interface Player {
-  id: string;
-  cards: Card[];
-  points: number;
-  bet: number;
-  chips: number;
-}
-
+interface Card { name: string; image: string; value: number; }
+interface Player { id: string; cards: Card[]; points: number; bet: number; chips: number; }
 interface GameState {
-  dealerCards: Card[];
-  players: Player[];
-  chips: number;
-  bet: number;
+  dealerCards: Card[]; players: Player[]; chips: number; bet: number;
   status: 'betting' | 'dealing' | 'playing' | 'dealerTurn' | 'results';
-  dealerPoints: number;
-  stateId?: number;
-  currentPlayer?: number;
+  dealerPoints: number; stateId?: number;
 }
-
-interface GameResult {
-  result: string;
-  message: string;
-}
+interface GameResult { result: string; message: string; }
 
 function Game() {
-  // NOTE: используем any для socket, чтобы избежать проблем с несовместимостью типов разных версий socket.io-client
-  const [socket, setSocket] = useState<any | null>(null);
-  const [connected, setConnected] = useState(false);
+  const [searchParams] = useSearchParams();
+  const mode = (searchParams.get('mode') || 'bot') as 'bot' | 'friend' | 'lobby';
 
+  const [socket, setSocket] = useState<SocketIOClient.Socket | null>(null);
   const [gameState, setGameState] = useState<GameState>({
-    dealerCards: [],
-    players: [],
-    chips: 1000,
-    bet: 0,
-    status: 'betting',
-    dealerPoints: 0,
+    dealerCards: [], players: [], chips: 1000, bet: 0, status: 'betting', dealerPoints: 0,
   });
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GameResult | null>(null);
@@ -61,35 +36,26 @@ function Game() {
   const [chipPulseKey, setChipPulseKey] = useState<number>(0);
 
   useEffect(() => {
-    const newSocket: any = ioClient(SOCKET_URL, {
+    const newSocket: SocketIOClient.Socket = ioClient(SOCKET_URL, {
       transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
-
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
       console.log('Connected to server:', newSocket.id);
       setError(null);
-      setConnected(true);
       newSocket.emit('joinRoom', 'defaultRoom');
-    });
-
-    newSocket.on('disconnect', (reason: string) => {
-      console.warn('Disconnected from server:', reason);
-      setConnected(false);
     });
 
     newSocket.on('connect_error', (err: Error) => {
       console.error('Socket connection error:', err.message);
       setError('Не удалось подключиться к серверу. Проверьте, запущен ли сервер.');
-      setConnected(false);
     });
 
     newSocket.on('gameUpdate', (state: GameState) => {
-      // Randomize dealer avatar when dealer gets cards (when length goes from 0 -> >0)
       try {
         const newDealerLen = state.dealerCards ? state.dealerCards.length : 0;
         if (prevDealerCardsLen.current === 0 && newDealerLen > 0) {
@@ -97,11 +63,9 @@ function Game() {
           setDealerSvg(pick);
         }
         prevDealerCardsLen.current = newDealerLen;
-      } catch (e) {
-        console.error('Error handling dealer svg selection:', e);
-      }
+      } catch (e) { console.error('Error handling dealer svg selection:', e); }
 
-      setGameState((prev) => ({ ...prev, ...state }));
+      setGameState(state);
     });
 
     newSocket.on('gameResult', (res: GameResult) => {
@@ -113,103 +77,38 @@ function Game() {
       setError(message);
     });
 
-    return () => {
-      try {
-        newSocket.disconnect();
-      } catch (e) {
-        // ignore
-      }
-      setConnected(false);
-    };
+    return () => { newSocket.disconnect(); };
   }, []);
 
-  // detect bet changes for chip animation
   useEffect(() => {
     if (prevBetRef.current !== gameState.bet) {
-      // only pulse when bet increased/decreased (i.e. user placed or reset)
       setChipPulseKey((k) => k + 1);
       prevBetRef.current = gameState.bet;
     }
   }, [gameState.bet]);
 
-  // Helper to check if actions allowed
-  const canPlaceBet = (amount: number) => {
-    return connected && gameState.status === 'betting' && (gameState.chips ?? 0) >= amount;
-  };
-
-  const canResetBet = () => {
-    return connected && gameState.status === 'betting' && (gameState.bet ?? 0) > 0;
-  };
-
-  const canStartGame = () => {
-    return connected && gameState.status === 'betting' && (gameState.bet ?? 0) > 0;
-  };
-
   const placeBet = (amount: number) => {
-    if (!socket) {
-      console.warn('Socket not ready yet - cannot place bet');
-      setError('Нет соединения с сервером');
-      return;
-    }
-    if (!canPlaceBet(amount)) {
-      console.warn('Cannot place bet now', { connected, status: gameState.status, chips: gameState.chips, amount });
-      return;
-    }
-    console.log('Placing bet:', amount);
+    if (!socket || !socket.connected || gameState.status !== 'betting' || gameState.chips < amount) return;
     socket.emit('placeBet', amount);
   };
 
   const resetBet = () => {
-    if (!socket) {
-      console.warn('Socket not ready yet - cannot reset bet');
-      setError('Нет соединения с сервером');
-      return;
-    }
-    if (!canResetBet()) {
-      console.warn('Cannot reset bet now', { connected, status: gameState.status, bet: gameState.bet });
-      return;
-    }
-    console.log('Resetting bet');
+    if (!socket || !socket.connected || gameState.status !== 'betting') return;
     socket.emit('resetBet');
   };
 
   const startGame = () => {
-    if (!socket) {
-      console.warn('Socket not ready yet - cannot start game');
-      setError('Нет соединения с сервером');
-      return;
-    }
-    if (!canStartGame()) {
-      console.warn('Cannot start game now', { connected, status: gameState.status, bet: gameState.bet });
-      return;
-    }
-    console.log('Starting game');
+    if (!socket || !socket.connected || gameState.bet <= 0) return;
     socket.emit('startGame');
   };
 
   const hit = () => {
-    if (!socket) {
-      console.warn('Socket not ready yet - cannot hit');
-      setError('Нет соединения с сервером');
-      return;
-    }
-    if (gameState.status !== 'playing') {
-      console.warn('Hit not allowed. Status:', gameState.status);
-      return;
-    }
+    if (!socket || !socket.connected || gameState.status !== 'playing') return;
     socket.emit('hit');
   };
 
   const stand = () => {
-    if (!socket) {
-      console.warn('Socket not ready yet - cannot stand');
-      setError('Нет соединения с сервером');
-      return;
-    }
-    if (gameState.status !== 'playing') {
-      console.warn('Stand not allowed. Status:', gameState.status);
-      return;
-    }
+    if (!socket || !socket.connected || gameState.status !== 'playing') return;
     socket.emit('stand');
   };
 
@@ -221,6 +120,9 @@ function Game() {
   return (
     <div className="game">
       <div className="game-table-wrapper">
+        {/* mode badge */}
+        <div className="game-mode-badge">Режим: {mode === 'bot' ? 'С ботом' : mode === 'friend' ? 'С друзьями (демо)' : 'Лобби (демо)'}</div>
+
         {error && <div className="game-error">{error}</div>}
 
         <AnimatePresence>
@@ -240,7 +142,7 @@ function Game() {
 
         {/* Полукруглый стол */}
         <div className="game-table">
-          {/* Dealer avatar (random) */}
+          {/* Dealer avatar */}
           <div className="dealer-avatar-wrapper">
             <motion.img
               src={dealerSvg}
@@ -249,14 +151,11 @@ function Game() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.4 }}
-              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                console.error('Dealer image error:', e.currentTarget.src);
-                e.currentTarget.src = '/assets/player-1.svg';
-              }}
+              onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.src = '/assets/player-1.svg'; }}
             />
           </div>
 
-          {/* Shoe (inline svg placeholder) */}
+          {/* Shoe */}
           <div className="shoe">
             <svg width="60" height="40" viewBox="0 0 60 40" className="shoe-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden>
               <rect x="2" y="6" rx="4" width="52" height="28" fill="#222" stroke="#fff" strokeOpacity="0.06" />
@@ -286,7 +185,6 @@ function Game() {
                     animate={{ x: index * 20, y: 0, rotateY: 0, opacity: 1 }}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: index * 0.25 }}
                     onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                      console.error('Card image error:', e.currentTarget.src);
                       e.currentTarget.src = 'https://via.placeholder.com/80x120?text=Card';
                     }}
                   />
@@ -325,7 +223,6 @@ function Game() {
                           animate={{ x: i * 18, y: 0, rotateY: 0, opacity: 1 }}
                           transition={{ duration: 0.7, ease: 'easeOut', delay: (index * 2 + i) * 0.2 }}
                           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                            console.error('Card image error:', e.currentTarget.src);
                             e.currentTarget.src = 'https://via.placeholder.com/80x120?text=Card';
                           }}
                         />
@@ -346,61 +243,36 @@ function Game() {
             {gameState.status === 'betting' && (
               <>
                 {[10, 50, 100].map((amt) => (
-                  <button
-                    key={amt}
-                    onClick={() => placeBet(amt)}
-                    disabled={!canPlaceBet(amt)}
-                    className="bet-button"
-                    title={!connected ? 'Нет соединения' : gameState.chips < amt ? 'Недостаточно фишек' : ''}
-                  >
-                    <img
-                      src="/assets/chip.svg"
-                      alt="chip"
-                      className="chip-btn-icon"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = 'https://via.placeholder.com/24?text=¢';
-                      }}
-                    />
+                  <button key={amt} onClick={() => placeBet(amt)} disabled={gameState.chips < amt} className="bet-button">
+                    <img src="/assets/chip.svg" alt="chip" className="chip-btn-icon" onError={(e)=>{ (e.currentTarget as HTMLImageElement).src='https://via.placeholder.com/24?text=¢'; }} />
                     {amt}
                   </button>
                 ))}
-                <button onClick={resetBet} disabled={!canResetBet()} className="game-button">
+                <button onClick={resetBet} disabled={gameState.bet === 0} className="game-button">
                   Сбросить
                 </button>
-                <button onClick={startGame} disabled={!canStartGame()} className="game-button">
+                <button onClick={startGame} disabled={gameState.bet === 0} className="game-button">
                   Старт
                 </button>
               </>
             )}
             {gameState.status === 'playing' && (
               <>
-                <button onClick={hit} className="game-button">
-                  Hit
-                </button>
-                <button onClick={stand} className="game-button">
-                  Stand
-                </button>
+                <button onClick={hit} className="game-button">Hit</button>
+                <button onClick={stand} className="game-button">Stand</button>
               </>
             )}
           </div>
 
-          {/* Info (chips + bet) with chip icon and pulse animation */}
+          {/* Info */}
           <div className="game-info">
             <p className="chips-line">
-              <img
-                src="/assets/chip.svg"
-                alt="chip"
-                className="chip-icon-inline"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = 'https://via.placeholder.com/20?text=¢';
-                }}
-              />
+              <img src="/assets/chip.svg" alt="chip" className="chip-icon-inline" onError={(e)=>{ (e.currentTarget as HTMLImageElement).src='https://via.placeholder.com/20?text=¢'; }} />
               <span>Фишки: {gameState.chips}</span>
             </p>
 
             <p className="bet-line">
               <span>Ставка: {gameState.bet}</span>
-              {/* animated chip that appears when bet changes */}
               <div className="bet-chip-anim">
                 <AnimatePresence mode="wait">
                   <motion.img
@@ -412,9 +284,7 @@ function Game() {
                     animate={{ scale: [0.8, 1.08, 0.95, 1], opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://via.placeholder.com/20?text=¢';
-                    }}
+                    onError={(e)=>{ (e.currentTarget as HTMLImageElement).src='https://via.placeholder.com/20?text=¢'; }}
                   />
                 </AnimatePresence>
               </div>

@@ -1,4 +1,4 @@
-/* src/styles/Game.css (updated) */
+/* src/styles/Game.css */
 
 /* Базовые обёртки */
 .game {
@@ -159,7 +159,7 @@
   height: 144px;
   border-radius: 8px;
   box-shadow: 0 10px 30px rgba(2,6,12,0.6);
-  transition: transform 280ms ease, box-shadow 280ms ease;
+  transition: transform 280ms cubic-bezier(.2,.9,.3,1), box-shadow 280ms cubic-bezier(.2,.9,.3,1);
   transform-origin: center bottom;
   user-select: none;
   -webkit-user-drag: none;
@@ -176,7 +176,7 @@
 /* ---------- Players: позиционирование по дуге стола ---------- */
 .game-players {
   position: absolute;
-  bottom: 36px; /* под дугой */
+  bottom: 36px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -192,10 +192,8 @@
   bottom: 8px;
   width: 260px;
   text-align: center;
-  pointer-events: auto; /* чтобы кнопки/интерактив могли быть кликабельны внутри этой зоны при необходимости */
-  transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 220ms cubic-bezier(.2,.9,.3,1), filter 220ms ease;
-  will-change: transform, box-shadow;
-  z-index: 30;
+  pointer-events: auto;
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 /* конкретные позиции для 1-3 игроков */
@@ -203,7 +201,7 @@
 .player-2 { left: 50%; transform: translateX(-50%); } /* центр */
 .player-3 { right: 6%; transform: translateX(0); }  /* правый */
 
-/* адаптивные поправки — в мобильной верстке игроки в линию */
+/* адаптивные поправки */
 @media (max-width: 880px) {
   .player-1 { left: 8%; }
   .player-2 { left: 50%; transform: translateX(-50%); }
@@ -220,7 +218,6 @@
   gap: 10px;
   margin-bottom: 8px;
   pointer-events: none;
-  position: relative;
 }
 
 .player-avatar {
@@ -229,12 +226,80 @@
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
   box-shadow: 0 8px 22px rgba(0,0,0,0.5);
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: transform 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+  position: relative;
 }
 
-/* Slight hover lift on avatar (desktop) */
-@media (hover: hover) {
-  .player-avatar:hover { transform: translateY(-4px); }
+/* hover effect */
+.player-avatar:hover {
+  transform: translateY(-4px);
+}
+
+/* ----- ПОДСВЕТКА ТЕКУЩЕГО ИГРОКА ----- */
+
+/* glow / lift for active player container */
+.player-area.player-active {
+  transform: translateY(-6px);
+  z-index: 80; /* поднять выше остальных */
+  filter: saturate(1.04);
+}
+
+/* subtle elevated shadow for the whole player's cards block */
+.player-area.player-active .cards-row .game-card {
+  box-shadow: 0 20px 50px rgba(2,6,12,0.65);
+  transform: translateY(-6px);
+}
+
+/* avatar highlight and ring */
+.player-area.player-active .player-avatar {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 18px 40px rgba(6, 120, 255, 0.22), 0 6px 16px rgba(0,0,0,0.5);
+  border: 1px solid rgba(10,130,255,0.10);
+}
+
+/* animated ring around avatar */
+.player-area.player-active .player-avatar::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 110%;
+  height: 110%;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(6,120,255,0.18);
+  animation: pulse-ring 1.6s infinite ease-in-out;
+  z-index: -1;
+}
+
+/* ring keyframes */
+@keyframes pulse-ring {
+  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
+  50% { transform: translate(-50%, -50%) scale(1.07); opacity: 0.4; }
+  100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
+}
+
+/* badge "Ваш ход" / "Ход игрока" */
+.your-turn-badge {
+  display: inline-block;
+  background: linear-gradient(90deg,#0ea5e9,#0ea5b7);
+  color: #021223;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  box-shadow: 0 8px 20px rgba(10,130,255,0.14);
+  align-self: center;
+  pointer-events: none;
+}
+
+/* небольшое изменение цвета имени когда ход игрока */
+.player-area.player-active h3,
+.player-area.player-active .your-turn-badge {
+  color: #eaf6ff;
+  text-shadow: 0 6px 18px rgba(6,120,255,0.14);
 }
 
 /* ---------- Controls ---------- */
@@ -292,7 +357,6 @@
 }
 
 /* ---------- Chip icons: размеры и анимации ---------- */
-
 .chip-btn-icon {
   width: 22px;
   height: 22px;
@@ -366,91 +430,9 @@
   }
 }
 
-/* ---------- Highlight: текущий игрок ("Ваш ход") ---------- */
+/* ---------- Прочие мелкие улучшения ---------- */
+p { color: #cfeaff; }
 
-/* Сама зона игрока подсвечивается и немного приподнимается */
-.player-area.current {
-  transform: translateY(-10px) scale(1.02);
-  z-index: 80;
-  filter: drop-shadow(0 18px 44px rgba(0,120,200,0.25));
-  box-shadow: 0 18px 40px rgba(0,120,200,0.16);
-}
-
-/* Glow ring (soft radial) behind current player's area */
-.player-area.current::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -8px;
-  transform: translateX(-50%);
-  width: 140%;
-  height: 60%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(14,165,183,0.14), rgba(14,165,183,0.06) 40%, transparent 60%);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Акцент на аватаре текущего игрока */
-.player-area.current .player-avatar {
-  transform: translateY(-6px) scale(1.04);
-  box-shadow: 0 14px 34px rgba(0,120,200,0.28);
-  border: 2px solid rgba(14,165,183,0.12);
-}
-
-/* Подсветка имени/очки */
-.player-area.current .player-top h3 {
-  color: #d7f9ff;
-  text-shadow: 0 6px 18px rgba(0,120,200,0.18);
-}
-
-/* Бейдж "Ваш ход" — позиционируется относительно .player-top */
-.player-turn-badge {
-  position: absolute;
-  top: -34px;
-  left: 50%;
-  transform: translateX(-50%) scale(1);
-  background: linear-gradient(180deg,#0ea5b7,#0284c7);
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  box-shadow: 0 8px 22px rgba(2,6,20,0.45);
-  pointer-events: none;
-  z-index: 120;
-  opacity: 0;
-  transform-origin: center;
-  transition: transform 260ms cubic-bezier(.2,.9,.3,1), opacity 220ms ease;
-}
-
-/* показываем бейдж с эффектом появления */
-.player-area.current .player-turn-badge {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-  animation: badgePop 420ms cubic-bezier(.2,.9,.3,1);
-}
-
-@keyframes badgePop {
-  0% { transform: translateX(-50%) translateY(-6px) scale(0.88); opacity: 0; }
-  60% { transform: translateX(-50%) translateY(2px) scale(1.06); opacity: 1; }
-  100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
-}
-
-/* Визуальная подсказка для вашего собственного игрока (you) */
-.player-area.you .player-avatar {
-  outline: 2px solid rgba(99,102,241,0.12);
-  box-shadow: 0 10px 30px rgba(99,102,241,0.12);
-  transition: box-shadow 260ms ease, transform 260ms ease;
-}
-
-/* Если вы — текущий игрок, комбинируем стили */
-.player-area.you.current .player-avatar {
-  outline-color: rgba(14,165,183,0.18);
-  box-shadow: 0 18px 40px rgba(14,165,183,0.18);
-}
-
-/* ---------- Мелкие улучшения: плавности ---------- */
 .game-card,
 .dealer-avatar,
 .player-avatar,
