@@ -18,30 +18,88 @@ const Lobby: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialModeParam = searchParams.get('mode');
-  const initialMode = initialModeParam === 'blackjack' || initialModeParam === 'poker' ? (initialModeParam as 'blackjack' | 'poker') : null;
+  const initialMode =
+    initialModeParam === 'blackjack' || initialModeParam === 'poker'
+      ? (initialModeParam as 'blackjack' | 'poker')
+      : null;
 
   const [selectedMode, setSelectedMode] = useState<'blackjack' | 'poker' | null>(initialMode);
 
   const handleSelectMode = (mode: 'blackjack' | 'poker') => {
     setSelectedMode(mode);
-    // обновляем query param — удобно для сохранения/шеринга
     setSearchParams({ mode });
   };
 
-  const handlePlayBot = () => navigate('/game?mode=bot');
-  const handlePlayFriends = () => navigate('/game?mode=friend');
-  const handleLobby = () => navigate('/game?mode=lobby');
+  // unified handler for game variant buttons (bot / friend / lobby)
+  const handleVariant = (variant: 'bot' | 'friend' | 'lobby') => {
+    // if user didn't explicitly pick a mode, default to blackjack
+    const mode = selectedMode ?? 'blackjack';
+    setSelectedMode(mode);
+    setSearchParams({ mode });
+
+    if (mode === 'blackjack') {
+      // old behavior: /game with query param mode=bot/friend/lobby
+      navigate(`/game?mode=${variant}`);
+      return;
+    }
+
+    // mode === 'poker'
+    // navigate to poker page and pass variant in query
+    navigate(`/poker?mode=${variant}`);
+  };
 
   return (
     <div className="lobby-page">
       {/* decorative scattered cards in background */}
       <div className="bg-cards" aria-hidden>
-        <img src={CARD_SOURCES[0]} className="bg-card bg-card--1" alt="card" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
-        <img src={CARD_SOURCES[1]} className="bg-card bg-card--2" alt="card" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
-        <img src={CARD_SOURCES[2]} className="bg-card bg-card--3" alt="card" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
-        <img src={CARD_SOURCES[3]} className="bg-card bg-card--4" alt="card" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
-        <img src={CARD_SOURCES[4]} className="bg-card bg-card--5" alt="card" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
-        <img src={CARD_SOURCES[5]} className="bg-card bg-card--6" alt="card" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
+        <img
+          src={CARD_SOURCES[0]}
+          className="bg-card bg-card--1"
+          alt="card"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
+        />
+        <img
+          src={CARD_SOURCES[1]}
+          className="bg-card bg-card--2"
+          alt="card"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
+        />
+        <img
+          src={CARD_SOURCES[2]}
+          className="bg-card bg-card--3"
+          alt="card"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
+        />
+        <img
+          src={CARD_SOURCES[3]}
+          className="bg-card bg-card--4"
+          alt="card"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
+        />
+        <img
+          src={CARD_SOURCES[4]}
+          className="bg-card bg-card--5"
+          alt="card"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
+        />
+        <img
+          src={CARD_SOURCES[5]}
+          className="bg-card bg-card--6"
+          alt="card"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
+        />
       </div>
 
       <motion.div
@@ -52,7 +110,7 @@ const Lobby: React.FC = () => {
       >
         <h1>Выберите режим игры</h1>
         <p className="lobby-sub">
-          Выберите игру: BlackJack или Poker (No Limit Texas Hold'em). После выбора режима — выберите вариант игры (с ботом, с друзьями, лобби).
+          Выберите игру: BlackJack или Poker. После выбора режима — выберите вариант игры (с ботом, с друзьями, лобби).
         </p>
 
         <div className="mode-row">
@@ -63,7 +121,14 @@ const Lobby: React.FC = () => {
             aria-label="BlackJack"
             aria-pressed={selectedMode === 'blackjack'}
           >
-            <img src="/assets/cards/king_of_diamonds2.png" alt="BlackJack" className="mode-icon" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
+            <img
+              src="/assets/cards/king_of_diamonds2.png"
+              alt="BlackJack"
+              className="mode-icon"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+              }}
+            />
             <div className="mode-text">
               <h3>BlackJack</h3>
               <p>Классический блекджек — цель набрать 21 или ближе к нему.</p>
@@ -77,7 +142,14 @@ const Lobby: React.FC = () => {
             aria-label="Poker"
             aria-pressed={selectedMode === 'poker'}
           >
-            <img src="/assets/cards/ace_of_spades.png" alt="Poker" className="mode-icon" onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }} />
+            <img
+              src="/assets/cards/ace_of_spades.png"
+              alt="Poker"
+              className="mode-icon"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+              }}
+            />
             <div className="mode-text">
               <h3>Poker</h3>
               <p>No Limit Texas Hold'em — два закрытых, пять общих карт, ставки и блайнды.</p>
@@ -91,7 +163,7 @@ const Lobby: React.FC = () => {
           <motion.div
             className="lobby-option"
             whileHover={{ scale: 1.03 }}
-            onClick={handlePlayBot}
+            onClick={() => handleVariant('bot')}
             role="button"
             tabIndex={0}
             aria-label="Играть с ботом"
@@ -105,7 +177,7 @@ const Lobby: React.FC = () => {
           <motion.div
             className="lobby-option disabled"
             whileHover={{ scale: 1.01 }}
-            onClick={handlePlayFriends}
+            onClick={() => handleVariant('friend')}
             role="button"
             tabIndex={0}
             aria-label="Играть с друзьями"
@@ -119,7 +191,7 @@ const Lobby: React.FC = () => {
           <motion.div
             className="lobby-option disabled"
             whileHover={{ scale: 1.01 }}
-            onClick={handleLobby}
+            onClick={() => handleVariant('lobby')}
             role="button"
             tabIndex={0}
             aria-label="Лобби"

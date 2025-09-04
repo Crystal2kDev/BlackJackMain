@@ -8,6 +8,7 @@ import Store from './pages/Store';
 import FAQ from './pages/FAQ';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
+import Poker from './pages/Poker';
 import './styles/navbar.css';
 import './styles/faq.css';
 import './styles/game.css';
@@ -25,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/faq" element={<FAQ />} />
         <Route path="/login" element={<Login />} />
         <Route path="/store" element={<Store />} />
+        <Route path="/poker" element={<Poker />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
