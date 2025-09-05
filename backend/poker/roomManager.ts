@@ -31,6 +31,7 @@ export class RoomManager {
 
       socket.on('poker/start', () => this.handleStart(socket));
       socket.on('poker/action', (action) => this.handleAction(socket, action));
+      socket.on('poker/sit', (data: { seatIdx: number }) => this.handleSit(socket, data));
       socket.on('disconnect', () => this.handleDisconnect(socket));
     });
   }
@@ -49,13 +50,15 @@ export class RoomManager {
     const room = this.ensureRoom(roomId);
     const pid = providedPid ?? socket.id;
 
+    // store socket for this pid (replaces existing socket if present)
     room.sockets.set(pid, socket);
     socket.join(roomId);
 
-    // assign seat if available and not already assigned
-    let seatIdx = room.engine.seats.findIndex(s => s.pid === pid);
+    // If pid already assigned to a seat, update socket mapping and keep seat state
+    let seatIdx = room.engine.seats.findIndex((s) => s.pid === pid);
     if (seatIdx === -1) {
-      seatIdx = room.engine.seats.findIndex(s => s.pid === null);
+      // find empty seat and assign
+      seatIdx = room.engine.seats.findIndex((s) => s.pid === null);
       if (seatIdx !== -1) {
         room.engine.seats[seatIdx].pid = pid;
         room.engine.seats[seatIdx].chips = room.engine.seats[seatIdx].chips ?? 1000;
@@ -67,15 +70,37 @@ export class RoomManager {
       console.log(`Pid=${pid} rejoined room ${roomId} at seat ${seatIdx}`);
     }
 
-    // send joined (with public state)
+    // send joined with public state
     const publicState = this.buildPublicState(room.engine);
-    socket.emit('poker/joined', { pid, state: publicState });
+    try { socket.emit('poker/joined', { pid, state: publicState }); } catch (e) { /* ignore */ }
 
     // private state (hole cards + combo label) for this player
     this.emitPrivateStateTo(socket, room.engine, pid);
 
-    // broadcast updated public state
+    // broadcast updated public state to everyone
     this.broadcastRoom(room);
+  }
+
+  handleSit(socket: Socket, data: { seatIdx: number }) {
+    const found = this.findRoomAndPidBySocket(socket);
+    if (!found) return;
+    const { room, pid } = found;
+    const idx = data?.seatIdx ?? -1;
+    if (idx < 0 || idx >= room.engine.seats.length) {
+      socket.emit('poker/error', { message: 'Неверный индекс места' });
+      return;
+    }
+    // if seat free or already your seat — take it
+    const target = room.engine.seats[idx];
+    if (target.pid && target.pid !== pid) {
+      socket.emit('poker/error', { message: 'Место занято' });
+      return;
+    }
+    target.pid = pid;
+    target.chips = target.chips ?? 1000;
+    console.log(`pid=${pid} sat at seat ${idx} in room ${room.id}`);
+    this.broadcastRoom(room);
+    this.emitPrivateStateToAll(room);
   }
 
   handleStart(socket: Socket) {
@@ -86,17 +111,16 @@ export class RoomManager {
     }
     const { room } = found;
 
-    // rotate button safely; if null -> set to 0
+    // rotate button safely
     const seatsLen = Math.max(1, room.engine.seats.length);
-    const nextButton = ((room.engine.buttonIdx ?? -1) + 1) % seatsLen;
-    room.engine.buttonIdx = nextButton;
+    room.engine.buttonIdx = ((room.engine.buttonIdx ?? -1) + 1) % seatsLen;
 
     room.engine.startHand(room.engine.buttonIdx);
 
     try {
       console.log(`Poker: hand started in room=${room.id}, button=${room.engine.buttonIdx}`);
-      room.engine.seats.forEach((s, idx) => {
-        const codes = (s.cards || []).map(c => c.code).join(',');
+      room.engine.seats.forEach((s: any, idx: number) => {
+        const codes = (s.cards || []).map((c: any) => c.code).join(',');
         console.log(` seat ${idx}: pid=${s.pid} chips=${s.chips} cards=[${codes}] folded=${s.folded}`);
       });
     } catch (e) {
@@ -116,7 +140,7 @@ export class RoomManager {
     }
     const { room, pid } = found;
 
-    const idx = room.engine.seats.findIndex(s => s.pid === pid);
+    const idx = room.engine.seats.findIndex((s) => s.pid === pid);
     if (idx === -1) {
       socket.emit('poker/error', { message: 'Вы не заняли место за столом' });
       return;
@@ -130,12 +154,15 @@ export class RoomManager {
         const result = room.engine.showdownAndDistribute();
         this.broadcastRoom(room);
         this.io?.to(room.id).emit('poker/result', { payouts: result.payouts, winnersDetail: result.winnersDetail });
+        // also send private states (final hole cards)
+        this.emitPrivateStateToAll(room);
         return;
       }
 
       if (room.engine.stage === 'results') {
         this.broadcastRoom(room);
         this.io?.to(room.id).emit('poker/result', { message: 'Hand finished (fold/winner declared)' });
+        this.emitPrivateStateToAll(room);
         return;
       }
 
@@ -153,8 +180,10 @@ export class RoomManager {
     for (const room of this.rooms.values()) {
       for (const [pid, sock] of room.sockets.entries()) {
         if (sock.id === socket.id) {
+          // remove socket mapping but keep seat assignment so player can reconnect by pid
           room.sockets.delete(pid);
           console.log(`poker: socket ${socket.id} disconnected for pid=${pid} (room=${room.id})`);
+          // broadcast state to others
           this.broadcastRoom(room);
           return;
         }
@@ -164,16 +193,16 @@ export class RoomManager {
 
   /* --------------------- PUBLIC / PRIVATE STATE BUILDERS --------------------- */
 
-  // Build public state. Hole cards скрыты до шоудауна.
+  // Build public state. Hole cards hidden until showdown/results.
   buildPublicState(engine: PokerEngine) {
     const showCardsNow = engine.stage === 'showdown' || engine.stage === 'results';
 
-    const seats = engine.seats.map(s => {
+    const seats = engine.seats.map((s: any) => {
       const publicCards = showCardsNow && !s.folded
-        ? (s.cards || []).map(c => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }))
+        ? (s.cards || []).map((c: any) => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }))
         : [];
 
-      // Публично комбинацию показываем только на шоудауне/результатах
+      // public combo label only on showdown/results
       const publicComboLabel = (showCardsNow && !s.folded)
         ? this.computeComboLabelForSeat(engine, s)
         : undefined;
@@ -188,11 +217,11 @@ export class RoomManager {
         isAllIn: s.isAllIn,
         isDealer: s.isDealer,
         isActive: engine.currentToActIdx !== null && engine.seats[engine.currentToActIdx].pid === s.pid,
-        comboLabel: publicComboLabel, // видна всем только на шоудауне
+        comboLabel: publicComboLabel,
       };
     });
 
-    const board = (engine.board || []).map(c => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }));
+    const board = (engine.board || []).map((c: any) => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }));
 
     return {
       seats,
@@ -208,18 +237,18 @@ export class RoomManager {
     };
   }
 
-  // Emit private hole-cards + combo label to a specific socket (видно только владельцу)
+  // Emit private hole-cards + combo label to a specific socket (visible only to owner)
   emitPrivateStateTo(socket: Socket, engine: PokerEngine, pid: string) {
-    const seat = engine.seats.find(s => s.pid === pid);
+    const seat = engine.seats.find((s: any) => s.pid === pid);
     if (!seat) {
       try { socket.emit('poker/privateState', { yourCards: [], comboLabel: '—' }); } catch (e) {}
       return;
     }
-    const yourCards = (seat.cards || []).map(c => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }));
+    const yourCards = (seat.cards || []).map((c: any) => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }));
     const comboLabel = this.computeComboLabelForSeat(engine, seat);
     try {
       socket.emit('poker/privateState', { yourCards, comboLabel });
-      console.log(`poker: emitted privateState to pid=${pid} cards=[${yourCards.map(x => x.name).join(',')}] combo=${comboLabel}`);
+      console.log(`poker: emitted privateState to pid=${pid} cards=[${yourCards.map((x:any) => x.name).join(',')}] combo=${comboLabel}`);
     } catch (e) {
       console.warn('emit privateState failed', e);
     }
@@ -228,9 +257,9 @@ export class RoomManager {
   // Emit private states (hole + combo) to all seated sockets
   emitPrivateStateToAll(room: Room) {
     for (const [pid, sock] of room.sockets.entries()) {
-      const seat = room.engine.seats.find(s => s.pid === pid);
+      const seat = room.engine.seats.find((s: any) => s.pid === pid);
       if (seat) {
-        const yourCards = (seat.cards || []).map(c => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }));
+        const yourCards = (seat.cards || []).map((c: any) => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }));
         const comboLabel = this.computeComboLabelForSeat(room.engine, seat);
         try {
           sock.emit('poker/privateState', { yourCards, comboLabel });
@@ -246,33 +275,35 @@ export class RoomManager {
 
   /* ------------------------------ EVALUATION ------------------------------ */
 
-  // Возвращает читаемый label комбинации для конкретного seat с учётом текущего борда.
-  // До флопа считаем упрощённо: пара в руке или High Card.
+  // Return readable combo label for seat given current board.
+  // Before flop: simplified labels (Pair / High Card). From flop onward use pokersolver.
   private computeComboLabelForSeat(engine: PokerEngine, seat: Seat): string {
-    if (!seat || !seat.pid || seat.folded) return seat?.folded ? 'Fold' : '—';
+    if (!seat) return '—';
+    if (seat.folded) return 'Пас';
     const hole = seat.cards || [];
     const board = engine.board || [];
 
-    // До флопа — упрощённые названия (не спойлим через сервер)
+    // before flop: simplified evaluation
     if (board.length < 3) {
       if (hole.length < 2) return '—';
-      const v1 = hole[0].code?.[0];
-      const v2 = hole[1].code?.[0];
+      const v1 = hole[0]?.code?.[0];
+      const v2 = hole[1]?.code?.[0];
       if (v1 && v2 && v1 === v2) return 'Pair';
       return 'High Card';
     }
 
-    // Нормальная оценка от флопа и дальше
+    // full evaluation with pokersolver
     try {
       const codes: string[] = [
-        ...hole.map(c => this.normalizeCode(c.code)).filter(Boolean) as string[],
-        ...board.map(c => this.normalizeCode(c.code)).filter(Boolean) as string[],
+        ...hole.map((c: any) => this.normalizeCode(c.code)).filter(Boolean) as string[],
+        ...board.map((c: any) => this.normalizeCode(c.code)).filter(Boolean) as string[],
       ];
       if (!Hand || codes.length < 5) return '—';
       const solved = Hand.solve(codes);
       const name: string | undefined = solved?.name;
-      return name || '—';
-    } catch {
+      return name ?? '—';
+    } catch (e) {
+      console.warn('Evaluation failed', e);
       return '—';
     }
   }
