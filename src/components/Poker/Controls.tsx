@@ -1,48 +1,62 @@
 // src/components/Poker/Controls.tsx
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import '../Poker/poker-components.css';
+import React, { useEffect, useState } from 'react';
 
-interface ControlsProps {
+type Props = {
   onFold: () => void;
   onCall: () => void;
   onCheck: () => void;
   onRaise: (amount: number) => void;
   onAllIn: () => void;
   minRaise: number;
-  canAct?: boolean;
-  stack?: number;
-}
+  canAct: boolean;
+  stack: number;
+  callAmount?: number;
+  canCheck?: boolean;
+  canCall?: boolean;
+  canRaise?: boolean;
+};
 
-const Controls: React.FC<ControlsProps> = ({ onFold, onCall, onCheck, onRaise, onAllIn, minRaise, canAct = true, stack = 1000 }) => {
-  const [raiseValue, setRaiseValue] = useState<number>(minRaise || 100);
+const Controls: React.FC<Props> = ({
+  onFold, onCall, onCheck, onRaise, onAllIn,
+  minRaise, canAct, stack,
+  callAmount = 0, canCheck = false, canCall = false, canRaise = false
+}) => {
+  const [raiseValue, setRaiseValue] = useState<number>(Math.max(minRaise, (callAmount || 0) + (minRaise || 0)));
 
-  const handleRaise = () => {
-    const amount = Math.max(minRaise, Math.min(stack, Math.floor(raiseValue)));
-    onRaise(amount);
-  };
+  useEffect(() => {
+    // update suggested raise when minRaise or callAmount changes
+    setRaiseValue(Math.max(minRaise, (callAmount || 0) + (minRaise || 0)));
+  }, [minRaise, callAmount]);
 
   return (
-    <div className="pc-controls">
-      <div className="pc-raise-row">
+    <div className="poker-controls-row" aria-hidden={!canAct} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <button className="btn" onClick={onFold} disabled={!canAct}>Fold</button>
+
+      <button className="btn" onClick={onCall} disabled={!canAct || !canCall}>
+        Call{callAmount > 0 ? ` ${callAmount}` : ''}
+      </button>
+
+      <button className="btn" onClick={onCheck} disabled={!canAct || !canCheck}>Check</button>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           type="number"
-          min={minRaise}
-          max={stack}
+          min={Math.max(minRaise, callAmount)}
           value={raiseValue}
-          onChange={(e) => setRaiseValue(Number(e.target.value))}
-          className="pc-raise-input"
-          aria-label="Raise amount"
+          onChange={(e) => setRaiseValue(Math.max(0, Number(e.target.value)))}
+          style={{ width: 120, padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', color: '#e6eef6' }}
+          disabled={!canAct}
         />
-        <button className="pc-raise-btn" onClick={handleRaise} disabled={!canAct}>Raise</button>
+        <button
+          className="btn"
+          onClick={() => onRaise(raiseValue)}
+          disabled={!canAct || !canRaise || raiseValue < Math.max(minRaise, callAmount)}
+        >
+          Raise
+        </button>
       </div>
 
-      <div className="pc-action-row">
-        <motion.button className="pc-btn pc-btn-ghost" whileHover={{ scale: 1.03 }} onClick={onFold} disabled={!canAct}>Fold</motion.button>
-        <motion.button className="pc-btn pc-btn-primary" whileHover={{ scale: 1.03 }} onClick={onCall} disabled={!canAct}>Call</motion.button>
-        <motion.button className="pc-btn pc-btn-outline" whileHover={{ scale: 1.03 }} onClick={onCheck} disabled={!canAct}>Check</motion.button>
-        <motion.button className="pc-btn pc-btn-danger" whileHover={{ scale: 1.03 }} onClick={onAllIn} disabled={!canAct}>All-in</motion.button>
-      </div>
+      <button className="btn" onClick={onAllIn} disabled={!canAct || stack <= 0}>All-in</button>
     </div>
   );
 };

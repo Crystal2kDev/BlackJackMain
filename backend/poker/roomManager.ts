@@ -29,9 +29,12 @@ export class RoomManager {
         this.handleJoin(socket, roomId, payload.playerId);
       });
 
+      socket.on('poker/sit', (payload: { seatIdx?: number }) => {
+        this.handleSit(socket, payload?.seatIdx);
+      });
+
       socket.on('poker/start', () => this.handleStart(socket));
       socket.on('poker/action', (action) => this.handleAction(socket, action));
-      socket.on('poker/sit', (data: { seatIdx: number }) => this.handleSit(socket, data));
       socket.on('disconnect', () => this.handleDisconnect(socket));
     });
   }
@@ -50,15 +53,13 @@ export class RoomManager {
     const room = this.ensureRoom(roomId);
     const pid = providedPid ?? socket.id;
 
-    // store socket for this pid (replaces existing socket if present)
     room.sockets.set(pid, socket);
     socket.join(roomId);
 
-    // If pid already assigned to a seat, update socket mapping and keep seat state
-    let seatIdx = room.engine.seats.findIndex((s) => s.pid === pid);
+    // if pid already assigned to seat, just update socket mapping
+    let seatIdx = room.engine.seats.findIndex(s => s.pid === pid);
     if (seatIdx === -1) {
-      // find empty seat and assign
-      seatIdx = room.engine.seats.findIndex((s) => s.pid === null);
+      seatIdx = room.engine.seats.findIndex(s => s.pid === null);
       if (seatIdx !== -1) {
         room.engine.seats[seatIdx].pid = pid;
         room.engine.seats[seatIdx].chips = room.engine.seats[seatIdx].chips ?? 1000;
@@ -70,35 +71,47 @@ export class RoomManager {
       console.log(`Pid=${pid} rejoined room ${roomId} at seat ${seatIdx}`);
     }
 
-    // send joined with public state
+    // send joined + public state
     const publicState = this.buildPublicState(room.engine);
-    try { socket.emit('poker/joined', { pid, state: publicState }); } catch (e) { /* ignore */ }
+    socket.emit('poker/joined', { pid, state: publicState });
 
-    // private state (hole cards + combo label) for this player
+    // send private (hole) state and combo
     this.emitPrivateStateTo(socket, room.engine, pid);
 
-    // broadcast updated public state to everyone
+    // broadcast updated public state
     this.broadcastRoom(room);
   }
 
-  handleSit(socket: Socket, data: { seatIdx: number }) {
+  handleSit(socket: Socket, seatIdx?: number) {
     const found = this.findRoomAndPidBySocket(socket);
-    if (!found) return;
+    if (!found) {
+      socket.emit('poker/error', { message: 'Комната не найдена при садке за стол' });
+      return;
+    }
     const { room, pid } = found;
-    const idx = data?.seatIdx ?? -1;
-    if (idx < 0 || idx >= room.engine.seats.length) {
+    if (typeof seatIdx !== 'number' || seatIdx < 0 || seatIdx >= room.engine.seats.length) {
       socket.emit('poker/error', { message: 'Неверный индекс места' });
       return;
     }
-    // if seat free or already your seat — take it
-    const target = room.engine.seats[idx];
+
+    // if seat occupied by other pid, refuse
+    const target = room.engine.seats[seatIdx];
     if (target.pid && target.pid !== pid) {
       socket.emit('poker/error', { message: 'Место занято' });
       return;
     }
+
+    // clear any previous seat the pid had
+    room.engine.seats.forEach((s) => { if (s.pid === pid) { s.pid = null; } });
+
+    // assign pid to seat
     target.pid = pid;
     target.chips = target.chips ?? 1000;
-    console.log(`pid=${pid} sat at seat ${idx} in room ${room.id}`);
+    target.bet = target.bet ?? 0;
+    target.cards = target.cards ?? [];
+    console.log(`pid=${pid} sat at ${seatIdx} in room ${room.id}`);
+
+    // send updates
     this.broadcastRoom(room);
     this.emitPrivateStateToAll(room);
   }
@@ -111,15 +124,16 @@ export class RoomManager {
     }
     const { room } = found;
 
-    // rotate button safely
+    // rotate button (safe)
     const seatsLen = Math.max(1, room.engine.seats.length);
-    room.engine.buttonIdx = ((room.engine.buttonIdx ?? -1) + 1) % seatsLen;
+    const nextButton = ((room.engine.buttonIdx ?? -1) + 1) % seatsLen;
+    room.engine.buttonIdx = nextButton;
 
     room.engine.startHand(room.engine.buttonIdx);
 
     try {
       console.log(`Poker: hand started in room=${room.id}, button=${room.engine.buttonIdx}`);
-      room.engine.seats.forEach((s: any, idx: number) => {
+      room.engine.seats.forEach((s, idx) => {
         const codes = (s.cards || []).map((c: any) => c.code).join(',');
         console.log(` seat ${idx}: pid=${s.pid} chips=${s.chips} cards=[${codes}] folded=${s.folded}`);
       });
@@ -140,7 +154,7 @@ export class RoomManager {
     }
     const { room, pid } = found;
 
-    const idx = room.engine.seats.findIndex((s) => s.pid === pid);
+    const idx = room.engine.seats.findIndex(s => s.pid === pid);
     if (idx === -1) {
       socket.emit('poker/error', { message: 'Вы не заняли место за столом' });
       return;
@@ -154,7 +168,7 @@ export class RoomManager {
         const result = room.engine.showdownAndDistribute();
         this.broadcastRoom(room);
         this.io?.to(room.id).emit('poker/result', { payouts: result.payouts, winnersDetail: result.winnersDetail });
-        // also send private states (final hole cards)
+        // private + public states (showdown should reveal)
         this.emitPrivateStateToAll(room);
         return;
       }
@@ -162,7 +176,6 @@ export class RoomManager {
       if (room.engine.stage === 'results') {
         this.broadcastRoom(room);
         this.io?.to(room.id).emit('poker/result', { message: 'Hand finished (fold/winner declared)' });
-        this.emitPrivateStateToAll(room);
         return;
       }
 
@@ -180,10 +193,9 @@ export class RoomManager {
     for (const room of this.rooms.values()) {
       for (const [pid, sock] of room.sockets.entries()) {
         if (sock.id === socket.id) {
-          // remove socket mapping but keep seat assignment so player can reconnect by pid
           room.sockets.delete(pid);
           console.log(`poker: socket ${socket.id} disconnected for pid=${pid} (room=${room.id})`);
-          // broadcast state to others
+          // keep seat.pid so player can reconnect by pid
           this.broadcastRoom(room);
           return;
         }
@@ -191,9 +203,9 @@ export class RoomManager {
     }
   }
 
-  /* --------------------- PUBLIC / PRIVATE STATE BUILDERS --------------------- */
+  /* --------------------- PUBLIC / PRIVATE BUILDERS --------------------- */
 
-  // Build public state. Hole cards hidden until showdown/results.
+  // Build public state (hide hole cards unless showdown/results)
   buildPublicState(engine: PokerEngine) {
     const showCardsNow = engine.stage === 'showdown' || engine.stage === 'results';
 
@@ -202,10 +214,7 @@ export class RoomManager {
         ? (s.cards || []).map((c: any) => ({ name: c.code, image: `/assets/cards/${this.serverCodeToImageName(c.code)}` }))
         : [];
 
-      // public combo label only on showdown/results
-      const publicComboLabel = (showCardsNow && !s.folded)
-        ? this.computeComboLabelForSeat(engine, s)
-        : undefined;
+      const publicComboLabel = (showCardsNow && !s.folded) ? this.computeComboLabelForSeat(engine, s) : undefined;
 
       return {
         pid: s.pid,
@@ -237,7 +246,7 @@ export class RoomManager {
     };
   }
 
-  // Emit private hole-cards + combo label to a specific socket (visible only to owner)
+  // Emit private hole-cards + combo label to a specific socket (видно только владельцу)
   emitPrivateStateTo(socket: Socket, engine: PokerEngine, pid: string) {
     const seat = engine.seats.find((s: any) => s.pid === pid);
     if (!seat) {
@@ -248,13 +257,13 @@ export class RoomManager {
     const comboLabel = this.computeComboLabelForSeat(engine, seat);
     try {
       socket.emit('poker/privateState', { yourCards, comboLabel });
-      console.log(`poker: emitted privateState to pid=${pid} cards=[${yourCards.map((x:any) => x.name).join(',')}] combo=${comboLabel}`);
+      console.log(`poker: emitted privateState to pid=${pid} yourCards=[${yourCards.map(x => x.name).join(',')}] combo=${comboLabel}`);
     } catch (e) {
       console.warn('emit privateState failed', e);
     }
   }
 
-  // Emit private states (hole + combo) to all seated sockets
+  // Emit private states to all seated sockets
   emitPrivateStateToAll(room: Room) {
     for (const [pid, sock] of room.sockets.entries()) {
       const seat = room.engine.seats.find((s: any) => s.pid === pid);
@@ -275,24 +284,22 @@ export class RoomManager {
 
   /* ------------------------------ EVALUATION ------------------------------ */
 
-  // Return readable combo label for seat given current board.
-  // Before flop: simplified labels (Pair / High Card). From flop onward use pokersolver.
+  // Compute readable combo label for a seat given current board.
   private computeComboLabelForSeat(engine: PokerEngine, seat: Seat): string {
-    if (!seat) return '—';
+    if (!seat || !seat.pid) return '—';
     if (seat.folded) return 'Пас';
-    const hole = seat.cards || [];
-    const board = engine.board || [];
 
-    // before flop: simplified evaluation
+    const hole = (seat.cards || []) as any[];
+    const board = (engine.board || []) as any[];
+
     if (board.length < 3) {
       if (hole.length < 2) return '—';
-      const v1 = hole[0]?.code?.[0];
-      const v2 = hole[1]?.code?.[0];
-      if (v1 && v2 && v1 === v2) return 'Pair';
-      return 'High Card';
+      const v1 = hole[0].code?.[0];
+      const v2 = hole[1].code?.[0];
+      if (v1 && v2 && v1 === v2) return 'Пара';
+      return 'Старшая карта';
     }
 
-    // full evaluation with pokersolver
     try {
       const codes: string[] = [
         ...hole.map((c: any) => this.normalizeCode(c.code)).filter(Boolean) as string[],
@@ -301,9 +308,9 @@ export class RoomManager {
       if (!Hand || codes.length < 5) return '—';
       const solved = Hand.solve(codes);
       const name: string | undefined = solved?.name;
-      return name ?? '—';
-    } catch (e) {
-      console.warn('Evaluation failed', e);
+      return (name && (this.rusName(name) ?? name)) || '—';
+    } catch (err) {
+      console.warn('computeComboLabel failed', err);
       return '—';
     }
   }
@@ -313,6 +320,14 @@ export class RoomManager {
     const v = code[0];
     const s = code[1];
     return (v === 'T' ? '10' : v) + s;
+  }
+
+  private rusName(name: string) {
+    const map: Record<string,string> = {
+      'Royal Flush':'Роял-флеш','Straight Flush':'Стрит-флеш','Four of a Kind':'Каре','Full House':'Фул-хаус',
+      'Flush':'Флеш','Straight':'Стрит','Three of a Kind':'Сет','Two Pair':'Две пары','Pair':'Пара','High Card':'Старшая карта'
+    };
+    return map[name];
   }
 
   /* ----------------------------- UTIL / FINDERS ----------------------------- */

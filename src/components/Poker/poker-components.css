@@ -1,105 +1,89 @@
 /* src/components/Poker/poker-components.css */
 
-/* Basic glass card / seat layout */
-.pc-board {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(2,6,12,0.5);
-  border: 1px solid rgba(255,255,255,0.03);
-}
-
-.pc-board-cards {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-}
-.pc-board-card {
-  width: 92px;
-  height: 136px;
-  border-radius: 8px;
-  object-fit: cover;
-  box-shadow: 0 10px 24px rgba(2,6,12,0.5);
-  transform-origin: center;
-}
-.pc-board-card.hidden {
-  filter: grayscale(0.6) brightness(0.8);
-  opacity: 0.45;
-  transform: scale(0.96);
-}
-
-/* board info */
-.pc-board-info {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  font-size: 0.92rem;
-  color: #cfeaff;
-}
-.pc-pot { font-weight:700; color:#eaf6ff; }
-.pc-sidepots span { margin-right:8px; color:#b9d6e6; }
-.pc-stage span { font-weight:600; color:#9fe0ff; }
-
-/* Seat */
+/* Seat card look - slightly narrower so 10 seats fit visually */
 .pc-seat {
-  width: 160px;
+  width: 180px;              /* reduced from wider to fit more seats */
   padding: 10px;
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.01));
-  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
-  text-align: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.56), rgba(0,0,0,0.34));
+  box-shadow: 0 18px 44px rgba(0,0,0,0.6);
+  color: #e6f6ff;
+  text-align: left;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  border: 1px solid rgba(255,255,255,0.02);
+  pointer-events: auto;
+}
+
+/* top */
+.pc-seat-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:700;
+}
+
+/* chips and name */
+.pc-seat-name { font-size: 0.95rem; color: #f3fbff; display:flex; gap:8px; align-items:center; }
+.pc-seat-chips { color:#b9d6e6; font-size:0.9rem; }
+
+/* compact avatar - uses emoji fallback if no image provided */
+.pc-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background: linear-gradient(180deg,#1f2933,#0b1114);
+  color: #f8fafc;
+  font-size: 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.03);
 }
-.pc-seat.dealer { outline: 2px solid rgba(14,165,183,0.12); }
-.pc-seat.active { box-shadow: 0 18px 48px rgba(6,120,255,0.08); transform: translateY(-4px); }
 
-.pc-seat-top { display:flex; justify-content:space-between; align-items:center; font-weight:600; color:#e6f6ff; font-size:0.95rem; }
-.pc-seat-name { display:flex; gap:8px; align-items:center; }
-.pc-seat-chips { color:#b9d6e6; font-size:0.9rem; font-weight:700; }
+/* cards - smaller to allow more players */
+.pc-seat-cards { display:flex; justify-content:center; gap:6px; min-height:96px; align-items:center; }
+.pc-seat-card { width:64px; height:96px; border-radius:8px; object-fit:cover; box-shadow: 0 8px 22px rgba(0,0,0,0.45); }
+.pc-seat-card:nth-child(1) { transform: rotate(-6deg); }
+.pc-seat-card:nth-child(2) { transform: rotate(6deg); margin-left:-6px; }
 
-.pc-seat-cards { display:flex; justify-content:center; gap:8px; min-height: 140px; align-items:center; }
-.pc-seat-card { width:68px; height:100px; border-radius:8px; object-fit:cover; box-shadow:0 8px 22px rgba(0,0,0,0.45); }
+/* folded look */
+.pc-seat.folded { opacity:0.6; filter: grayscale(0.35); }
 
-.pc-no-cards { color:#9fb6c6; padding: 28px 0; }
-.pc-seat-bet { color:#cfeaff; font-weight:700; }
-.pc-seat-combo { color:#b9d6e6; font-size:0.82rem; }
+/* active highlight */
+.pc-seat.active { box-shadow: 0 20px 60px rgba(255,215,120,0.08), 0 10px 60px rgba(6,120,255,0.08); transform: translateY(-6px); border: 1px solid rgba(255,230,120,0.05); }
+
+/* dealer badge */
+.pc-seat.dealer { outline: 2px solid rgba(255,255,255,0.02); }
+
+/* no cards */
+.pc-no-cards { color:#9fb6c6; text-align:center; padding: 28px 0; }
+
+/* seat combo line */
+.pc-seat-combo { font-size:0.78rem; color:#cfeaff; text-align:center; min-height:18px; }
 
 /* sit button */
-.pc-sit-btn {
-  margin-top:6px;
-  padding:6px 8px;
-  border-radius:8px;
-  background: linear-gradient(180deg,#0ea5b7,#0077b6);
-  color:white;
-  border:none;
-  cursor:pointer;
-}
+.pc-sit-btn { width:100%; margin-top:6px; padding:8px 10px; border-radius:8px; background: linear-gradient(180deg,#0ea5b7,#0077b6); color:white; border:none; cursor:pointer; font-weight:700; }
 
-/* Controls */
-.pc-controls { display:flex; flex-direction:column; gap:10px; align-items:center; padding:8px; }
-.pc-raise-row { display:flex; gap:8px; align-items:center; }
-.pc-raise-input { width:100px; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:rgba(255,255,255,0.02); color:#e6f6ff; }
-.pc-raise-btn { padding:8px 12px; border-radius:8px; cursor:pointer; background:linear-gradient(180deg,#0ea5b7,#0077b6); color:white; border:none; }
-
-.pc-action-row { display:flex; gap:8px; }
-.pc-btn { padding:8px 12px; border-radius:10px; cursor:pointer; border:none; font-weight:700; }
-.pc-btn-ghost { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); color:#cfeaff; }
-.pc-btn-primary { background: linear-gradient(180deg,#0ea5b7,#0077b6); color:white; }
-.pc-btn-outline { background: transparent; border:1px solid rgba(255,255,255,0.06); color:#cfeaff; }
-.pc-btn-danger { background: linear-gradient(180deg,#ef4444,#b91c1c); color:white; }
-
-/* chip stack */
+/* chips */
 .pc-chips { display:flex; gap:8px; align-items:center; }
-.pc-chips-icon { width:28px; height:28px; object-fit:contain; }
+.pc-chips-icon { width:28px; height:28px; object-fit:contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.5)); }
 .pc-chips-amount { font-weight:800; color:#e6f6ff; }
 
-/* compact */
-.pc-chips.compact .pc-chips-icon { width:20px; height:20px; }
+/* button hover */
+.pc-btn { transition: transform 160ms ease, box-shadow 160ms ease; }
+.pc-btn:hover { transform: translateY(-4px); box-shadow: 0 18px 44px rgba(0,0,0,0.45); }
+
+/* compact mobile tweaks */
+@media (max-width:980px) {
+  .pc-seat { width: 140px; padding:8px; }
+  .pc-seat-card { width:56px; height:84px; }
+  .pc-avatar { width:30px; height:30px; font-size:14px; }
+}
+@media (max-width:640px) {
+  .pc-seat { width: 120px; padding:6px; }
+  .pc-seat-card { width:48px; height:72px; }
+  .pc-avatar { width:26px; height:26px; font-size:12px; }
+}
