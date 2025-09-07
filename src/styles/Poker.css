@@ -202,3 +202,150 @@
 
 /* small tweaks for card faces z-order */
 .card-face { display:block; }
+
+/* ====== Active player stronger highlight ====== */
+@keyframes activePulseStrong {
+  0% { box-shadow: 0 0 0 0 rgba(14,165,183,0.18); transform: translateY(0) scale(1); }
+  50% { box-shadow: 0 0 0 12px rgba(14,165,183,0.06); transform: translateY(-6px) scale(1.02); }
+  100% { box-shadow: 0 0 0 0 rgba(14,165,183,0.18); transform: translateY(0) scale(1); }
+}
+
+/* apply strong ring + glow to avatar & seat when active */
+.seat-inline.active-turn {
+  z-index: 2000 !important;
+  transform: translateY(-4px) !important;
+}
+.seat-inline.active-turn .avatar-wrap {
+  animation: activePulseStrong 1.6s infinite ease-in-out;
+  border-radius: 10px;
+  position: relative;
+  /* stronger glowing border */
+  box-shadow: 0 8px 26px rgba(6,180,200,0.12), 0 0 0 2px rgba(6,180,200,0.12);
+  border: 2px solid rgba(6,180,200,0.18);
+}
+
+/* add a "Your turn" badge for the current player (if it's you) */
+.seat-inline.me.active-turn::after {
+  content: "YOUR TURN";
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,#06b6d4,#7c3aed);
+  color: white;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+  transform: translateY(-8px);
+}
+
+/* ensure board faces layering is stable */
+.card-face.card-front { z-index: 3; }
+.card-face.card-back { z-index: 2; }
+
+/* keep board-cards stacking consistent */
+.board-cards { display:flex; gap:10px; align-items:center; justify-content:center; pointer-events:none; position:relative; z-index: 1000; }
+
+/* Result overlay (basic styling) */
+.result-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 5000;
+  background: rgba(0,0,0,0.45);
+}
+
+.result-overlay-card {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  background: linear-gradient(180deg, rgba(14,24,32,0.98), rgba(6,10,16,0.98));
+  border-radius: 12px;
+  padding: 18px;
+  color: #e6eef6;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.result-header { font-size: 1.1rem; font-weight: 900; color: #eaf6ff; margin-bottom: 8px; }
+.result-message { color: #cfeaff; margin-bottom: 10px; font-weight:700; }
+.result-payouts { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.result-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:8px; background: rgba(255,255,255,0.02); }
+.result-player { font-weight:800; color:#eaf6ff; }
+.result-amt { font-weight:900; color:#bff2d8; }
+
+/* ===== F11 Modal (bottom-right) ===== */
+.f11-modal-wrap {
+  position: fixed;
+  right: 20px;
+  bottom: 22px;
+  z-index: 6000;
+  pointer-events: auto;
+}
+
+.f11-modal {
+  width: 320px;
+  max-width: calc(100% - 40px);
+  background: linear-gradient(180deg, rgba(6,10,16,0.92), rgba(10,14,20,0.96));
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: #e6eef6;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.f11-modal-title {
+  font-weight:800;
+  font-size:0.95rem;
+  color:#eaf6ff;
+}
+
+.f11-modal-body {
+  font-size:0.88rem;
+  color:#cfeaff;
+  opacity:0.95;
+}
+
+/* progress bar */
+.f11-progress-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.f11-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg,#06b6d4,#7c3aed);
+  transition: width 0.18s linear;
+}
+
+/* actions */
+.f11-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+.f11-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 800;
+  cursor: pointer;
+}
+.f11-btn.close {
+  background: rgba(255,255,255,0.03);
+  color: #d6eef9;
+}
+.f11-btn.f11 {
+  background: linear-gradient(90deg,#06b6d4,#0ea5b7);
+  color: white;
+}
+
+/* small responsive tweaks */
+@media (max-width: 720px) {
+  .seat-inline.active-turn .avatar-wrap { transform: none; }
+  .result-overlay-card { width: calc(100% - 24px); padding: 14px; }
+  .f11-modal { width: calc(100% - 28px); right: 14px; bottom: 12px; }
+}

@@ -1,7 +1,7 @@
 // src/pages/Poker.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ioClient from 'socket.io-client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/Poker.css';
 import ChipStack from '../components/Poker/ChipStack';
 
@@ -97,7 +97,7 @@ function solveLabel(hole: Card[], board: Card[]): string {
   }
 }
 
-/* ---------- CardFlip component (3D) with delay ---------- */
+/* ---------- CardFlip component (3D) with conditional animation ---------- */
 const FLIP_DURATION_MS = 480;
 const BOARD_STAGGER_MS = 240; // delay between board card flips
 
@@ -109,23 +109,44 @@ type CardFlipProps = {
   delayMs?: number;
   altFront?: string;
   altBack?: string;
+  shouldAnimate?: boolean; // if false -> instant reveal (no flip)
 };
 
-const CardFlip: React.FC<CardFlipProps> = ({ frontSrc, backSrc = '/assets/cards/cardRedBack.png', revealed, size = 'normal', delayMs = 0, altFront, altBack }) => {
+const CardFlip: React.FC<CardFlipProps> = ({
+  frontSrc,
+  backSrc = '/assets/cards/cardRedBack.png',
+  revealed,
+  size = 'normal',
+  delayMs = 0,
+  altFront,
+  altBack,
+  shouldAnimate = true,
+}) => {
   const w = size === 'small' ? 72 : 92;
   const h = size === 'small' ? 108 : 136;
 
+  const rotate = revealed ? 180 : 0;
+  // cast to any to avoid TS/Framer mismatch on dynamic transition shape
+  const transition: any = shouldAnimate
+    ? {
+        duration: FLIP_DURATION_MS / 1000,
+        ease: [0.2, 0.9, 0.3, 1],
+        delay: delayMs / 1000,
+      }
+    : { duration: 0, delay: 0 };
+
   return (
-    <div className={`card-flip card-flip--${size}`} style={{ width: w, height: h, perspective: 1100 }}>
+    <motion.div
+      className={`card-flip card-flip--${size}`}
+      style={{ width: w, height: h, perspective: 1100 }}
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
+    >
       <motion.div
         className="card-flip-inner"
-        animate={{ rotateY: revealed ? 180 : 0 }}
+        animate={{ rotateY: rotate }}
         initial={false}
-        transition={{
-          duration: FLIP_DURATION_MS / 1000,
-          ease: [0.2, 0.9, 0.3, 1],
-          delay: delayMs / 1000,
-        }}
+        transition={transition}
         style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d' }}
       >
         <img
@@ -143,7 +164,9 @@ const CardFlip: React.FC<CardFlipProps> = ({ frontSrc, backSrc = '/assets/cards/
             transform: 'rotateY(0deg)',
             objectFit: 'cover',
           }}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
         />
 
         <img
@@ -161,10 +184,12 @@ const CardFlip: React.FC<CardFlipProps> = ({ frontSrc, backSrc = '/assets/cards/
             transform: 'rotateY(180deg)',
             objectFit: 'cover',
           }}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+          }}
         />
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -182,6 +207,46 @@ const Poker: React.FC = () => {
   const [myCards, setMyCards] = useState<Card[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // local reveal counter & animation indices
+  const [boardRevealCountLocal, setBoardRevealCountLocal] = useState<number>(0);
+  const prevStageRef = useRef<PokerStage | null>(null);
+  const revealTimersRef = useRef<number[]>([]);
+  const animateIndicesRef = useRef<Set<number>>(new Set()); // indices that should animate when revealed
+
+  // result overlay
+  const [resultPayload, setResultPayload] = useState<any | null>(null);
+  const resultTimerRef = useRef<number | null>(null);
+
+  /* F11 modal state */
+  const [showF11Modal, setShowF11Modal] = useState<boolean>(true);
+  const f11ProgressRef = useRef<number>(8000); // ms remaining
+  const [f11Pct, setF11Pct] = useState<number>(100);
+  const f11IntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // start countdown for modal (8 seconds)
+    f11ProgressRef.current = 8000;
+    setF11Pct(100);
+    if (f11IntervalRef.current) {
+      window.clearInterval(f11IntervalRef.current);
+      f11IntervalRef.current = null;
+    }
+    const tick = window.setInterval(() => {
+      f11ProgressRef.current = Math.max(0, f11ProgressRef.current - 200);
+      const pct = Math.round((f11ProgressRef.current / 8000) * 100);
+      setF11Pct(pct);
+      if (f11ProgressRef.current <= 0) {
+        if (f11IntervalRef.current) { window.clearInterval(f11IntervalRef.current); f11IntervalRef.current = null; }
+        setShowF11Modal(false);
+      }
+    }, 200) as unknown as number;
+    f11IntervalRef.current = tick;
+
+    return () => {
+      if (f11IntervalRef.current) { window.clearInterval(f11IntervalRef.current); f11IntervalRef.current = null; }
+    };
+  }, []); // run once on mount
+
   useEffect(() => {
     const s = ioClient(SOCKET_URL, { transports: ['websocket'], reconnection: true });
     setSocket(s);
@@ -189,14 +254,24 @@ const Poker: React.FC = () => {
     const sendJoin = () => {
       try {
         s.emit('poker/join', { roomId: 'defaultPokerRoom', playerId: myPid ?? undefined });
-      } catch (e) { console.warn('join emit failed', e); }
+      } catch (e) {
+        console.warn('join emit failed', e);
+      }
     };
 
-    s.on('connect', () => { setError(null); sendJoin(); });
-    s.on('connect_error', (err: Error) => { setError('Не удалось подключиться к серверу.'); console.error(err); });
+    s.on('connect', () => {
+      setError(null);
+      sendJoin();
+    });
+    s.on('connect_error', (err: Error) => {
+      setError('Не удалось подключиться к серверу.');
+      console.error(err);
+    });
 
     s.on('poker/joined', (payload: { pid: string; state?: Partial<PokerState> }) => {
-      try { localStorage.setItem(POKER_PID_KEY, payload.pid); } catch {}
+      try {
+        localStorage.setItem(POKER_PID_KEY, payload.pid);
+      } catch {}
       setMyPid(payload.pid);
       applyPublicUpdate(payload.state);
     });
@@ -210,10 +285,40 @@ const Poker: React.FC = () => {
       setTimeout(() => setError(null), 2500);
     });
 
-    return () => { try { s.disconnect(); } catch {} };
+    s.on('poker/result', (payload: any) => {
+      if (resultTimerRef.current) {
+        window.clearTimeout(resultTimerRef.current);
+        resultTimerRef.current = null;
+      }
+      setResultPayload(payload ?? { message: 'Result' });
+
+      // clear after some time
+      resultTimerRef.current = window.setTimeout(() => {
+        setResultPayload(null);
+        resultTimerRef.current = null;
+      }, 6500) as unknown as number;
+    });
+
+    return () => {
+      try {
+        s.disconnect();
+      } catch {}
+      revealTimersRef.current.forEach((t) => {
+        try {
+          window.clearTimeout(t);
+        } catch {}
+      });
+      revealTimersRef.current = [];
+      if (resultTimerRef.current) {
+        window.clearTimeout(resultTimerRef.current);
+        resultTimerRef.current = null;
+      }
+      animateIndicesRef.current.clear();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Apply server public update
   const applyPublicUpdate = (incoming?: Partial<PokerState>) => {
     setState((prev) => {
       const next: PokerState = {
@@ -230,16 +335,89 @@ const Poker: React.FC = () => {
         currentToActPid: incoming?.currentToActPid ?? prev.currentToActPid,
         stateId: incoming?.stateId ?? (prev.stateId ?? 0),
       };
+
+      // compute target reveal count for new stage
+      const targetReveal = stageToRevealCount(next.stage, next.board);
+      const prevStage = prev.stage;
+
+      // If first load (no prev) -> show proper count immediately (no animation)
+      if (prevStageRef.current === null) {
+        clearAllRevealTimers();
+        animateIndicesRef.current.clear();
+        setBoardRevealCountLocal(targetReveal);
+      } else if (prevStageRef.current !== next.stage) {
+        // stage changed -> animate only if reveal increases
+        const currentLocal = boardRevealCountLocal;
+        if (targetReveal > currentLocal) {
+          animateBoardReveal(currentLocal, targetReveal);
+        } else {
+          clearAllRevealTimers();
+          animateIndicesRef.current.clear();
+          setBoardRevealCountLocal(targetReveal);
+        }
+      } else {
+        // stage unchanged -> keep local reveal count (prevents re-animation on unrelated updates)
+      }
+
+      prevStageRef.current = next.stage;
       return next;
     });
   };
 
-  // guard: only send action if it's your turn
+  const clearAllRevealTimers = () => {
+    revealTimersRef.current.forEach((t) => {
+      try {
+        window.clearTimeout(t);
+      } catch {}
+    });
+    revealTimersRef.current = [];
+  };
+
+  // animateBoardReveal: schedule incremental reveals; set animateIndicesRef for each newly revealed index
+  const animateBoardReveal = (fromCount: number, toCount: number) => {
+    clearAllRevealTimers();
+    animateIndicesRef.current.clear();
+
+    for (let next = fromCount + 1; next <= toCount; next++) {
+      const idx = next - 1;
+      const delay = (next - fromCount - 1) * BOARD_STAGGER_MS;
+
+      const timer = window.setTimeout(() => {
+        animateIndicesRef.current.add(idx);
+        setBoardRevealCountLocal(next);
+        // after flip finishes, remove animation flag
+        const removal = window.setTimeout(() => {
+          animateIndicesRef.current.delete(idx);
+        }, FLIP_DURATION_MS + 120) as unknown as number;
+        revealTimersRef.current.push(removal);
+      }, delay) as unknown as number;
+
+      revealTimersRef.current.push(timer);
+    }
+  };
+
+  // stage -> reveal mapping
+  const stageToRevealCount = (stage: PokerStage, board: Card[] = []) => {
+    switch (stage) {
+      case 'flop':
+        return Math.min(3, board.length);
+      case 'turn':
+        return Math.min(4, board.length);
+      case 'river':
+        return Math.min(5, board.length);
+      case 'showdown':
+      case 'results':
+        return board.length;
+      default:
+        return 0;
+    }
+  };
+
+  // actions
   const sendAction = (action: { type: 'fold' | 'call' | 'check' | 'raise' | 'allin'; amount?: number }) => {
     if (!socket) return;
     const canAct = Boolean(state.currentToActPid && state.currentToActPid === myPid);
     if (!canAct) {
-      // UI guard — server should also validate, but we block here to avoid accidental fast clicks
       setError('Не ваш ход — дождитесь своей очереди');
       setTimeout(() => setError(null), 1200);
       return;
@@ -251,13 +429,12 @@ const Poker: React.FC = () => {
     if (!socket) return;
     socket.emit('poker/start');
   };
-
   const onSit = (idx: number) => {
     if (!socket) return;
     socket.emit('poker/sit', { seatIdx: idx });
   };
 
-  /* Derived */
+  // Derived
   const mySeatIdx = useMemo(() => {
     if (!myPid) return null;
     const idx = state.seats.findIndex((s) => s.pid === myPid);
@@ -266,15 +443,12 @@ const Poker: React.FC = () => {
   const mySeat = mySeatIdx !== null && mySeatIdx >= 0 ? state.seats[mySeatIdx] : null;
   const canAct = Boolean(state.currentToActPid && state.currentToActPid === myPid);
 
-  // seats to render: before game (waiting) show all (to allow sit). After start show only occupied seats.
+  // seats to render and positions
   const seatsToRender = useMemo(() => {
-    if (state.stage !== 'waiting') {
-      return state.seats.filter((s) => !!s.pid);
-    }
+    if (state.stage !== 'waiting') return state.seats.filter((s) => !!s.pid);
     return state.seats.slice(0, DEFAULT_SEAT_COUNT);
   }, [state.seats, state.stage]);
 
-  // radial positions for seats around table
   const seatPositions = useMemo(() => {
     const count = Math.max(1, seatsToRender.length);
     const rx = 44;
@@ -305,14 +479,11 @@ const Poker: React.FC = () => {
     const shiftX = Math.cos(pos.rad) * playerRadialOffsetPx;
     const shiftY = Math.sin(pos.rad) * playerRadialOffsetPx;
 
-    // determine which front src for player cards
-    const cardA = isMe ? (myCards[0] ?? null) : (showHole ? (seat.cards[0] ?? null) : null);
-    const cardB = isMe ? (myCards[1] ?? null) : (showHole ? (seat.cards[1] ?? null) : null);
-
+    const cardA = isMe ? myCards[0] ?? null : showHole ? seat.cards[0] ?? null : null;
+    const cardB = isMe ? myCards[1] ?? null : showHole ? seat.cards[1] ?? null : null;
     const revealedA = Boolean(cardA);
     const revealedB = Boolean(cardB);
 
-    // empty seat in waiting stage
     if (!seat.pid && state.stage === 'waiting') {
       return (
         <div
@@ -329,7 +500,9 @@ const Poker: React.FC = () => {
         >
           <div className="empty-avatar">+</div>
           <div className="meta-name">Empty</div>
-          <button className="pc-sit-btn" onClick={() => onSit(originalIdx)}>Sit</button>
+          <button className="pc-sit-btn" onClick={() => onSit(originalIdx)}>
+            Sit
+          </button>
         </div>
       );
     }
@@ -337,7 +510,9 @@ const Poker: React.FC = () => {
     return (
       <div
         key={seat.pid ?? `seat-${originalIdx}-${posIdx}`}
-        className={`seat-inline ${seat.folded ? 'folded' : ''} ${isMe ? 'me' : ''} ${state.currentToActPid === seat.pid ? 'active-turn' : ''}`}
+        className={`seat-inline ${seat.folded ? 'folded' : ''} ${isMe ? 'me' : ''} ${
+          state.currentToActPid === seat.pid ? 'active-turn' : ''
+        }`}
         style={{
           left: `${pos.left}%`,
           top: `${pos.top}%`,
@@ -355,12 +530,14 @@ const Poker: React.FC = () => {
                 src={seat.avatar ?? '/assets/default-avatar.png'}
                 alt={seat.name ?? 'avatar'}
                 className="avatar-img"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/default-avatar.png'; }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/default-avatar.png';
+                }}
               />
             </div>
 
             <div className="meta">
-              <div className="meta-name">{seat.pid ? (isMe ? 'You' : (seat.name ?? 'Player')) : 'Empty'}</div>
+              <div className="meta-name">{seat.pid ? (isMe ? 'You' : seat.name ?? 'Player') : 'Empty'}</div>
               <div className="meta-stack">{seat.chips.toLocaleString('ru-RU')}</div>
             </div>
           </div>
@@ -372,7 +549,6 @@ const Poker: React.FC = () => {
         </div>
 
         <div className="seat-cards-inline">
-          {/* Card A */}
           <CardFlip
             frontSrc={cardA ? cardA.image : '/assets/cards/cardRedBack.png'}
             backSrc="/assets/cards/cardRedBack.png"
@@ -381,8 +557,8 @@ const Poker: React.FC = () => {
             delayMs={0}
             altFront={cardA?.name}
             altBack="card back"
+            shouldAnimate={true}
           />
-          {/* Card B */}
           <CardFlip
             frontSrc={cardB ? cardB.image : '/assets/cards/cardRedBack.png'}
             backSrc="/assets/cards/cardRedBack.png"
@@ -391,6 +567,7 @@ const Poker: React.FC = () => {
             delayMs={80}
             altFront={cardB?.name}
             altBack="card back"
+            shouldAnimate={true}
           />
         </div>
 
@@ -399,35 +576,26 @@ const Poker: React.FC = () => {
     );
   };
 
-  // board reveal logic: how many board cards should be revealed for current stage
-  const boardRevealedCount = (() => {
-    switch (state.stage) {
-      case 'flop': return 3;
-      case 'turn': return 4;
-      case 'river': return 5;
-      case 'showdown':
-      case 'results': return state.board.length;
-      default: return 0; // preflop/waiting
-    }
-  })();
-
+  // board rendering: use boardRevealCountLocal & animateIndicesRef
   const renderBoard = () => {
     const boardCards = Array.from({ length: 5 }).map((_, i) => state.board[i] ?? null);
     return (
       <div className="board-cards" role="list" aria-label="Board cards">
         {boardCards.map((card, i) => {
-          const shouldReveal = i < boardRevealedCount && Boolean(card);
+          const shouldReveal = i < boardRevealCountLocal && Boolean(card);
           const delayForCard = i * BOARD_STAGGER_MS;
+          const shouldAnimate = animateIndicesRef.current.has(i);
           return (
             <CardFlip
-              key={`board-${i}-${state.stateId ?? 0}`}
+              key={`board-${i}`}
               frontSrc={card ? card.image : '/assets/cards/cardRedBack.png'}
               backSrc="/assets/cards/cardRedBack.png"
               revealed={shouldReveal}
               size="normal"
-              delayMs={shouldReveal ? delayForCard : 0}
+              delayMs={shouldAnimate ? delayForCard : 0}
               altFront={card?.name}
               altBack="board back"
+              shouldAnimate={shouldAnimate}
             />
           );
         })}
@@ -435,9 +603,114 @@ const Poker: React.FC = () => {
     );
   };
 
-  // seats with position mapping
-  const seatsRenderList = seatsToRender.map((s, i) => ({ seat: s, originalIdx: state.seats.indexOf(s), posIdx: i }));
+  // render result overlay
+  const renderResultOverlay = () => {
+    if (!resultPayload) return null;
+    const payouts = Array.isArray(resultPayload.payouts) ? resultPayload.payouts : [];
+    const winnersDetail = Array.isArray(resultPayload.winnersDetail) ? resultPayload.winnersDetail : [];
+    const msg = resultPayload.message ?? null;
+    const winnerPids: string[] = payouts.map((p: any) => p.pid).filter(Boolean);
+    const fallbackMessage =
+      msg ??
+      (winnerPids.length > 0
+        ? `Winner${winnerPids.length > 1 ? 's' : ''}: ${winnerPids
+            .map((pid) => {
+              const seat = state.seats.find((s) => s.pid === pid);
+              return seat ? (seat.pid === myPid ? 'You' : seat.name ?? 'Player') : pid;
+            })
+            .join(', ')}`
+        : 'Hand finished');
 
+    return (
+      <AnimatePresence>
+        <motion.div key="result-overlay" className="result-overlay-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            className="result-overlay-card"
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+          >
+            <div className="result-header">Hand result</div>
+            <div className="result-message">{fallbackMessage}</div>
+
+            {payouts.length > 0 && (
+              <div className="result-payouts">
+                {payouts.map((p: any, idx: number) => {
+                  const seat = state.seats.find((s) => s.pid === p.pid);
+                  const friendly = seat ? (seat.pid === myPid ? 'You' : seat.name ?? 'Player') : p.pid;
+                  return (
+                    <div className="result-row" key={idx}>
+                      <div className="result-player">{friendly}</div>
+                      <div className="result-amt">+{p.amount}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {winnersDetail && winnersDetail.length > 0 && payouts.length === 0 && (
+              <div className="result-winners">
+                {winnersDetail.map((w: any, i: number) => {
+                  const seat = state.seats.find((s) => s.pid === w.pid);
+                  const friendly = seat ? (seat.pid === myPid ? 'You' : seat.name ?? 'Player') : w.pid ?? `#${i + 1}`;
+                  return (
+                    <div className="result-row" key={i}>
+                      <div className="result-player">{friendly}</div>
+                      <div className="result-amt">{w.reason ?? ''}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  };
+
+  /* ---------- Fullscreen handling for F11 modal ---------- */
+  const handleF11 = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        const el = document.documentElement as any;
+        const request = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el) || el.msRequestFullscreen?.bind(el);
+        if (request) {
+          await request();
+        } else {
+          console.warn('Fullscreen API not available (request).');
+        }
+      } else {
+        const exit =
+          (document as any).exitFullscreen?.bind(document) ||
+          (document as any).webkitExitFullscreen?.bind(document) ||
+          (document as any).msExitFullscreen?.bind(document);
+        if (exit) {
+          await exit();
+        } else {
+          console.warn('Fullscreen API not available (exit).');
+        }
+      }
+    } catch (e) {
+      console.warn('Fullscreen API failed', e);
+    } finally {
+      setShowF11Modal(false);
+      if (f11IntervalRef.current) {
+        window.clearInterval(f11IntervalRef.current);
+        f11IntervalRef.current = null;
+      }
+    }
+  };
+
+  const closeF11Modal = () => {
+    setShowF11Modal(false);
+    if (f11IntervalRef.current) {
+      window.clearInterval(f11IntervalRef.current);
+      f11IntervalRef.current = null;
+    }
+  };
+
+  /* ---------- Render ---------- */
   return (
     <div className="poker-page">
       <div className="poker-container">
@@ -448,7 +721,9 @@ const Poker: React.FC = () => {
           </div>
 
           <div className="poker-controls">
-            <button className="btn big-start" onClick={startGame} style={{ color: '#fff' }}>Start / Deal</button>
+            <button className="btn big-start" onClick={startGame} style={{ color: '#fff' }}>
+              Start / Deal
+            </button>
           </div>
         </header>
 
@@ -459,42 +734,99 @@ const Poker: React.FC = () => {
             <div className="board-area">
               <div className="pc-board">
                 <div className="pc-board-info">
-                  <div className="pc-pot">Ставка: <strong>{state.pot}</strong></div>
-                  {state.sidePots && state.sidePots.length > 0 && (<div className="pc-sidepots">Side: {state.sidePots.map(s => s.amount).join(', ')}</div>)}
+                  <div className="pc-pot">
+                    Ставка: <strong>{state.pot}</strong>
+                  </div>
+                  {state.sidePots && state.sidePots.length > 0 && <div className="pc-sidepots">Side: {state.sidePots.map((s) => s.amount).join(', ')}</div>}
                 </div>
                 {renderBoard()}
               </div>
             </div>
 
-            {seatsRenderList.map((it, idx) => renderSeat(it.seat, it.originalIdx, idx))}
+            {seatsToRender.map((s, i) => renderSeat(s, state.seats.indexOf(s), i))}
           </div>
         </div>
 
         <div className="poker-actions" style={{ marginTop: 18 }}>
           <div className="action-info" style={{ marginBottom: 8 }}>
-            <div>To act: {state.currentToActPid === myPid ? 'YOU' : (state.currentToActPid ?? '-')}</div>
+            <div>To act: {state.currentToActPid === myPid ? 'YOU' : state.currentToActPid ?? '-'}</div>
             <div>Min Raise: {state.minRaise}</div>
-            <div>Blinds: {state.smallBlind}/{state.bigBlind}</div>
+            <div>
+              Blinds: {state.smallBlind}/{state.bigBlind}
+            </div>
             <div>Stage: {state.stage}</div>
           </div>
 
           <div className="action-buttons">
-            <button className="action-btn fold" disabled={!canAct} onClick={() => sendAction({ type: 'fold' })}>FOLD</button>
-            <button className="action-btn check" disabled={!canAct} onClick={() => sendAction({ type: 'check' })}>CHECK</button>
-            <button className="action-btn call" disabled={!canAct} onClick={() => sendAction({ type: 'call' })}>CALL</button>
+            <button className="action-btn fold" disabled={!canAct} onClick={() => sendAction({ type: 'fold' })}>
+              FOLD
+            </button>
+            <button className="action-btn check" disabled={!canAct} onClick={() => sendAction({ type: 'check' })}>
+              CHECK
+            </button>
+            <button className="action-btn call" disabled={!canAct} onClick={() => sendAction({ type: 'call' })}>
+              CALL
+            </button>
 
             <div className="raise-control">
               <input className="raise-input" id="raiseAmount" type="number" min={50} step={50} defaultValue={state.minRaise || state.bigBlind || 100} disabled={!canAct} />
-              <button className="action-btn raise" disabled={!canAct} onClick={() => {
-                const el = document.getElementById('raiseAmount') as HTMLInputElement | null;
-                const amount = el ? Math.max(50, parseInt(el.value || '0', 10)) : (state.minRaise || 100);
-                sendAction({ type: 'raise', amount });
-              }}>RAISE</button>
+              <button
+                className="action-btn raise"
+                disabled={!canAct}
+                onClick={() => {
+                  const el = document.getElementById('raiseAmount') as HTMLInputElement | null;
+                  const amount = el ? Math.max(50, parseInt(el.value || '0', 10)) : state.minRaise || 100;
+                  sendAction({ type: 'raise', amount });
+                }}
+              >
+                RAISE
+              </button>
             </div>
 
-            <button className="action-btn allin" disabled={!canAct} onClick={() => sendAction({ type: 'allin' })}>ALL-IN</button>
+            <button className="action-btn allin" disabled={!canAct} onClick={() => sendAction({ type: 'allin' })}>
+              ALL-IN
+            </button>
           </div>
         </div>
+
+        {/* Result overlay */}
+        {renderResultOverlay()}
+
+        {/* F11 modal (bottom-right) */}
+        <AnimatePresence>
+          {showF11Modal && (
+            <motion.div
+              className="f11-modal-wrap"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.28 }}
+            >
+              <div className="f11-modal">
+                <div className="f11-modal-title">Для лучшего погружения в игру — нажмите F11</div>
+                <div className="f11-modal-body">Режим полного экрана улучшает визуализацию и анимации.</div>
+
+                <div className="f11-progress-bar" aria-hidden>
+                  <div className="f11-progress-inner" style={{ width: `${f11Pct}%` }} />
+                </div>
+
+                <div className="f11-modal-actions">
+                  <button className="f11-btn close" onClick={closeF11Modal}>
+                    Закрыть
+                  </button>
+                  <button
+                    className="f11-btn f11"
+                    onClick={() => {
+                      handleF11();
+                    }}
+                  >
+                    F11
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

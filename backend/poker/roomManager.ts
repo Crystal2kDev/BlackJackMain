@@ -13,6 +13,7 @@ type Room = {
   id: string;
   engine: PokerEngine;
   sockets: Map<string, Socket>; // pid -> socket
+  showdownTimer?: any; // optional timer id for scheduled showdown distribution
 };
 
 export class RoomManager {
@@ -43,7 +44,7 @@ export class RoomManager {
     if (!this.rooms.has(roomId)) {
       const seats: Partial<Seat>[] = Array.from({ length: 6 }).map(() => ({ pid: null, chips: 1000 }));
       const engine = new PokerEngine(seats);
-      this.rooms.set(roomId, { id: roomId, engine, sockets: new Map() });
+      this.rooms.set(roomId, { id: roomId, engine, sockets: new Map(), showdownTimer: null });
       console.log(`Created poker room ${roomId}`);
     }
     return this.rooms.get(roomId)!;
@@ -161,31 +162,54 @@ export class RoomManager {
     }
 
     try {
-      room.engine.applyAction(idx, action);
+      // clear any scheduled showdown if player acts (prevent double-run)
+      if (room.showdownTimer) {
+        clearTimeout(room.showdownTimer);
+        room.showdownTimer = null;
+      }
 
-      // if moved to showdown stage
-      if (room.engine.stage === 'showdown') {
-        const result = room.engine.showdownAndDistribute();
-        this.broadcastRoom(room);
-        this.io?.to(room.id).emit('poker/result', { payouts: result.payouts, winnersDetail: result.winnersDetail });
-        // private + public states (showdown should reveal)
-        this.emitPrivateStateToAll(room);
+      const result = room.engine.applyAction(idx, action); // returns { stageChangedToShowdown }
+
+      // normal update first (clients need to see card flips / bets)
+      this.broadcastRoom(room);
+      this.emitPrivateStateToAll(room);
+
+      // if moved to showdown stage (either returned flag or state now is showdown)
+      const SHOWDOWN_DELAY_MS = 1600; // allow client reveal animations to finish (stagger + flip duration)
+      if ((result && result.stageChangedToShowdown) || room.engine.stage === 'showdown') {
+        // schedule distribution after small delay so clients can flip last card
+        if (!room.showdownTimer) {
+          room.showdownTimer = setTimeout(() => {
+            try {
+              const distribution = room.engine.showdownAndDistribute();
+              this.broadcastRoom(room);
+              this.io?.to(room.id).emit('poker/result', { payouts: distribution.payouts, winnersDetail: distribution.winnersDetail });
+              // private + public states (showdown should reveal)
+              this.emitPrivateStateToAll(room);
+              room.showdownTimer = null;
+            } catch (err) {
+              console.error('Showdown schedule error', err);
+              room.showdownTimer = null;
+            }
+          }, SHOWDOWN_DELAY_MS);
+        }
         return;
       }
 
       if (room.engine.stage === 'results') {
+        // immediate results (fold/winner declared path)
         this.broadcastRoom(room);
         this.io?.to(room.id).emit('poker/result', { message: 'Hand finished (fold/winner declared)' });
         return;
       }
 
-      // normal update
-      this.broadcastRoom(room);
-      this.emitPrivateStateToAll(room);
+      // otherwise nothing special (we already broadcast above)
     } catch (err) {
       const message = (err as Error).message ?? 'Action failed';
       console.error('Action error:', message);
       socket.emit('poker/error', { message });
+      // after error, broadcast to keep clients consistent
+      this.broadcastRoom(room);
     }
   }
 
@@ -357,5 +381,55 @@ export class RoomManager {
     if (!this.io) return;
     const publicState = this.buildPublicState(room.engine);
     this.io.to(room.id).emit('poker/update', publicState);
+
+    // Robustness: schedule showdown when appropriate (extra safety)
+    try {
+      const SHOWDOWN_DELAY_MS = 1600; // should be >= client board flip total duration
+      // If engine already in showdown and not scheduled -> schedule distribution
+      if (room.engine.stage === 'showdown' && !room.showdownTimer) {
+        room.showdownTimer = setTimeout(() => {
+          try {
+            const distribution = room.engine.showdownAndDistribute();
+            this.broadcastRoom(room);
+            this.io?.to(room.id).emit('poker/result', { payouts: distribution.payouts, winnersDetail: distribution.winnersDetail });
+            this.emitPrivateStateToAll(room);
+            room.showdownTimer = null;
+          } catch (err) {
+            console.error('Scheduled showdown (from broadcast) failed', err);
+            room.showdownTimer = null;
+          }
+        }, SHOWDOWN_DELAY_MS);
+        return;
+      }
+
+      // Extra condition: if on river round and there are no actionable players or bets are equal/all-in,
+      // schedule a showdown — this handles edge cases where acted flags or turn pointer may be in ambiguous state.
+      if (room.engine.stage === 'river' && !room.showdownTimer) {
+        const engine = room.engine;
+        const active = engine.seats.filter(s => s.pid !== null && !s.folded);
+        if (active.length > 0) {
+          const maxBet = engine.maxCurrentBet();
+          const betsEqualOrAllIn = active.every(s => (s.bet === maxBet) || s.isAllIn);
+          const anyCanAct = active.some(s => !s.isAllIn);
+          // if everyone's bets are matched (or everyone is all-in) and there is no one able to act — schedule showdown
+          if (betsEqualOrAllIn && (!anyCanAct || engine.currentToActIdx === null)) {
+            room.showdownTimer = setTimeout(() => {
+              try {
+                const distribution = engine.showdownAndDistribute();
+                this.broadcastRoom(room);
+                this.io?.to(room.id).emit('poker/result', { payouts: distribution.payouts, winnersDetail: distribution.winnersDetail });
+                this.emitPrivateStateToAll(room);
+                room.showdownTimer = null;
+              } catch (err) {
+                console.error('Scheduled showdown (river auto) failed', err);
+                room.showdownTimer = null;
+              }
+            }, SHOWDOWN_DELAY_MS);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('broadcastRoom scheduling error', err);
+    }
   }
 }
