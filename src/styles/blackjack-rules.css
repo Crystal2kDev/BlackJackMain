@@ -1,0 +1,163 @@
+/* BlackJack rules page — OracleGame styling */
+
+/* Page wrapper */
+.bj-page {
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(180deg, #071428 0%, #021018 100%);
+  color: #eaf6ff;
+  padding: 2.4rem 1rem;
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Container matches site's max-width and centering */
+.bj-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.bj-container header {
+  margin-bottom: 18px;
+  text-align: left;
+}
+.bj-container h1 {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.4px;
+}
+.bj-lead {
+  margin: 0 0 12px 0;
+  color: #b9cfe0;
+  font-size: 1rem;
+  max-width: 980px;
+}
+
+/* Main content layout */
+.bj-main {
+  display: grid;
+  gap: 16px;
+}
+
+/* Section card */
+.bj-section {
+  background: linear-gradient(180deg, rgba(255,255,255,0.016), rgba(255,255,255,0.01));
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+}
+.bj-section h2 {
+  margin: 0 0 10px 0;
+  color: #eaf6ff;
+  font-size: 1.2rem;
+}
+
+/* lists, ordered lists */
+.bj-list {
+  margin: 8px 0 0 1rem;
+  color: #cfeaff;
+}
+.bj-list li {
+  margin: 6px 0;
+  line-height: 1.55;
+}
+
+.bj-ordered {
+  margin: 8px 0 0 1.1rem;
+  color: #cfeaff;
+  padding-left: 0;
+}
+.bj-ordered li {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+/* definition list */
+.bj-dl dt {
+  font-weight: 800;
+  margin-top: 8px;
+  color: #eaf6ff;
+}
+.bj-dl dd {
+  margin: 6px 0 8px 0;
+  color: #cfeaff;
+  margin-left: 0.6rem;
+  line-height: 1.5;
+}
+
+/* Card example row */
+.bj-examples-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.bj-examples-col { flex: 1 1 260px; min-width: 220px; }
+.ex-title { color: #b9cfe0; font-weight: 700; margin-bottom: 8px; }
+
+/* small card visuals */
+.cards-row { display:flex; gap:8px; align-items:center; }
+.bj-example-card {
+  width: 84px;
+  height: 124px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b1420;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.bj-example-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+
+/* contact/actions row */
+.bj-actions-row {
+  display:flex;
+  gap:12px;
+  margin-top: 12px;
+  flex-wrap:wrap;
+}
+.bj-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 800;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.bj-btn-primary {
+  background: linear-gradient(180deg,#0ea5b7,#0077b6);
+  color:white;
+  box-shadow: 0 10px 28px rgba(0,119,153,0.12);
+}
+.bj-btn-ghost {
+  background: rgba(255,255,255,0.02);
+  color: #b9cfe0;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* responsive */
+@media (max-width: 980px) {
+  .bj-examples-row { gap: 10px; }
+  .bj-example-card { width: 72px; height: 106px; }
+  .bj-container { padding: 0 14px; }
+}
+@media (max-width: 560px) {
+  .bj-container h1 { font-size: 1.4rem; }
+  .bj-lead { font-size: 0.95rem; }
+  .bj-section { padding: 14px; }
+  .cards-row { gap: 6px; }
+  .bj-example-card { width: 60px; height: 88px; }
+  .bj-btn { padding: 10px 12px; font-size: 0.95rem; }
+}

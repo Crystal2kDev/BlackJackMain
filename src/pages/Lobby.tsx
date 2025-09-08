@@ -168,7 +168,15 @@ const Lobby: React.FC = () => {
             tabIndex={0}
             aria-label="Играть с ботом"
           >
-            <div className="option-icon">🤖</div>
+            <div className="option-icon">
+              <img
+                src="/assets/bot-icon.png"
+                alt="С ботом"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+                }}
+              />
+            </div>
             <h3>С ботом</h3>
             <p>Быстрая игра против умного бота. Режим доступен прямо сейчас.</p>
             <div className="option-cta">Играть</div>
@@ -182,7 +190,15 @@ const Lobby: React.FC = () => {
             tabIndex={0}
             aria-label="Играть с друзьями"
           >
-            <div className="option-icon">👥</div>
+            <div className="option-icon">
+              <img
+                src="/assets/group-icon.png"
+                alt="С друзьями"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+                }}
+              />
+            </div>
             <h3>С друзьями</h3>
             <p>Создавайте комнаты и приглашайте друзей. Скоро будет доступно.</p>
             <div className="option-cta">Скоро</div>
@@ -196,7 +212,15 @@ const Lobby: React.FC = () => {
             tabIndex={0}
             aria-label="Лобби"
           >
-            <div className="option-icon">🏷️</div>
+            <div className="option-icon">
+              <img
+                src="/assets/tournament-icon.png"
+                alt="Лобби и турниры"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png';
+                }}
+              />
+            </div>
             <h3>Лобби / турниры</h3>
             <p>Собирайте игроков в публичных лобби и участвуйте в турнирах.</p>
             <div className="option-cta">Скоро</div>

@@ -1,0 +1,166 @@
+/* Styles for Rules page (OracleGame) — responsive and consistent with site theme */
+
+:root {
+  --max-width: 1340px;
+  --page-padding: 1.5rem;
+  --bg: linear-gradient(180deg, #071428 0%, #021018 100%);
+  --card-bg: rgba(255,255,255,0.02);
+  --muted: #9fb6c6;
+  --accent: #00b7eb;
+  --glass: rgba(255,255,255,0.03);
+}
+
+.rules-page {
+  min-height: calc(100vh - 64px);
+  padding: 2.5rem 1rem;
+  background: var(--bg);
+  color: #eaf6ff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+}
+
+.rules-container {
+  width: 100%;
+  max-width: var(--max-width);
+  background: transparent;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* Header */
+.rules-header {
+  margin-bottom: 18px;
+}
+
+.rules-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.rules-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* Table of contents */
+.rules-toc {
+  background: var(--card-bg);
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 12px;
+  border-radius: 10px;
+  margin: 12px 0 18px 0;
+  box-shadow: 0 8px 24px rgba(2,6,12,0.6);
+}
+
+.rules-toc strong { display:block; margin-bottom:8px; color:#eaf6ff; }
+.rules-toc ul { margin: 0; padding-left: 18px; color: var(--muted); }
+.rules-toc a {
+  color: var(--muted); text-decoration: none; transition: color 160ms ease;
+}
+.rules-toc a:hover { color: var(--accent); text-decoration: underline; }
+
+/* Sections */
+.rules-section {
+  background: var(--card-bg);
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 18px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(2,6,12,0.5);
+}
+
+.rules-section h2 {
+  margin: 0 0 10px 0;
+  font-size: 1.25rem;
+  color: #ffffff;
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.rules-list > li {
+  margin-bottom: 10px;
+}
+
+/* nested sublist style */
+.rules-sublist {
+  margin: 6px 0 0 18px;
+  padding: 0;
+  list-style: disc;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.rules-sublist li { margin: 6px 0; }
+
+/* footer area on the page */
+.rules-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.008));
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.rules-footer-left p { margin: 0 0 8px 0; color: var(--muted); font-size: 0.95rem; }
+.rules-footer-left .muted { font-size: 0.85rem; color: #97aebc; margin-top:6px; }
+
+.rules-footer-right {
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.rules-footer .support-link,
+.rules-footer .help-link {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--accent), #0ea5b7);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  transition: transform 160ms ease;
+}
+
+.rules-footer .help-link {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  box-shadow: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.rules-footer .support-link:hover { transform: translateY(-3px); }
+.rules-footer .help-link:hover { color: var(--accent); text-decoration: underline; }
+
+/* Small utilities */
+a { color: var(--accent); }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .rules-footer { flex-direction: column; align-items: stretch; text-align: center; }
+  .rules-footer-right { align-items: center; }
+  .rules-toc ul { padding-left: 12px; }
+}
+
+@media (max-width: 480px) {
+  .rules-header h1 { font-size: 1.45rem; }
+  .rules-section { padding: 14px; }
+  .rules-toc { padding: 10px; }
+}

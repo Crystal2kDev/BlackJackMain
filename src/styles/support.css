@@ -1,0 +1,253 @@
+/* support.css — стили для страницы Техподдержки, адаптированы к общей теме сайта */
+
+.support-page {
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(180deg, #071428 0%, #021018 100%);
+  display: flex;
+  justify-content: center;
+  padding: 2.4rem 1rem;
+  box-sizing: border-box;
+  color: #eaf6ff;
+}
+
+/* контейнер */
+.support-card {
+  width: 100%;
+  max-width: 980px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 18px 54px rgba(2,6,12,0.6);
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* header */
+.support-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 1.5rem;
+  color: #ffffff;
+  font-weight: 800;
+}
+.support-lead {
+  margin: 0 0 14px 0;
+  color: #b9cfe0;
+  font-size: 0.98rem;
+}
+
+/* форма */
+.support-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ряд с двумя колонками */
+.row.two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* поля */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.field-label {
+  font-weight: 700;
+  color: #cfeaff;
+  font-size: 0.9rem;
+}
+
+/* inputs / textarea base */
+.support-form input[type="text"],
+.support-form input[type="email"],
+.support-form input[type="tel"],
+.support-form input,
+.support-form textarea {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: #eaf6ff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  outline: none;
+  font-size: 0.95rem;
+  transition: box-shadow 160ms ease, transform 120ms ease, border-color 160ms ease;
+}
+.support-form input::placeholder,
+.support-form textarea::placeholder {
+  color: #93a9b8;
+}
+
+/* focus */
+.support-form input:focus,
+.support-form textarea:focus {
+  box-shadow: 0 8px 28px rgba(0,167,200,0.06);
+  border-color: rgba(0,183,235,0.18);
+  transform: translateY(-1px);
+}
+
+/* textarea */
+.support-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* select styling (wrap with caret svg) */
+.select-wrap {
+  position: relative;
+}
+.select-wrap select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 10px;
+  color: #eaf6ff;
+  font-weight: 700;
+}
+.select-wrap select option {
+  background: #0f1724; /* fallback for dropdown background in some browsers */
+  color: #eaf6ff;
+}
+.select-caret {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  color: #cfeaff;
+  pointer-events: none;
+}
+
+/* attachment area */
+.attach-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-direction: column;
+}
+.attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg,#00b7eb,#0ea5b7);
+  color: white;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(0,119,153,0.12);
+}
+.attach-btn:active { transform: translateY(1px); }
+
+/* attached files list */
+.attached-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 36px;
+}
+.attached-empty {
+  color: #9fb6c6;
+  font-size: 0.9rem;
+}
+.attached-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  color: #eaf6ff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.attached-item .fname {
+  max-width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.remove-file {
+  background: transparent;
+  border: none;
+  color: #ffb3b3;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* hint */
+.attach-hint {
+  font-size: 0.82rem;
+  color: #9fb6c6;
+  margin-top: 6px;
+}
+
+/* errors */
+.form-error {
+  background: linear-gradient(180deg,#ef4444,#b91c1c);
+  color: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+/* actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.btn-submit {
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: linear-gradient(90deg,#00b7eb,#0ea5b7);
+  border: none;
+  color: white;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 12px 36px rgba(6,120,160,0.12);
+}
+.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-cancel {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  color: #cfeaff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* success message */
+.support-sent {
+  margin-top: 18px;
+  text-align: center;
+  padding: 14px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0,255,200,0.03), rgba(255,255,255,0.01));
+  border: 1px solid rgba(0,183,235,0.08);
+}
+.sent-icon { font-size: 28px; margin-bottom: 6px; }
+.sent-title { font-weight: 800; color: #e6fff9; }
+.sent-sub { color: #bfeff7; font-size: 0.95rem; }
+
+/* responsiveness */
+@media (max-width: 880px) {
+  .row.two-cols { grid-template-columns: 1fr; }
+  .form-actions { justify-content: stretch; flex-direction: column-reverse; }
+  .btn-submit, .btn-cancel { width: 100%; }
+}

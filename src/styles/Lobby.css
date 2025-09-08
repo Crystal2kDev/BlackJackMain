@@ -75,6 +75,7 @@
   gap: 12px;
   justify-content: center;
   margin-bottom: 14px;
+  align-items: stretch;
 }
 
 .mode-card {
@@ -90,6 +91,8 @@
   text-align: left;
   transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
   box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+  flex: 1 1 320px;
+  max-width: 520px;
 }
 
 .mode-card:hover {
@@ -144,26 +147,42 @@
   box-shadow: 0 8px 22px rgba(0,0,0,0.45);
   border: 1px solid rgba(255,255,255,0.03);
   transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+  min-height: 160px;
 }
 
+.lobby-option:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(14,165,183,0.12);
+}
+
+/* disabled visually, but still clickable (you may change to not-allowed) */
 .lobby-option.disabled {
-  opacity: 0.75;
-  filter: grayscale(0.06);
-  cursor: pointer;
+  opacity: 0.9;
+  filter: grayscale(0.04);
 }
 
-.lobby-option .option-icon {
-  font-size: 2.25rem;
+/* icon wrapper */
+.option-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
   box-shadow: 0 6px 14px rgba(0,0,0,0.45);
+  overflow: hidden;
 }
 
+/* image inside option icon */
+.option-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* titles and descriptions inside option */
 .lobby-option h3 {
   margin: 2px 0;
   color: #f8feff;
@@ -177,6 +196,7 @@
   line-height: 1.3;
 }
 
+/* CTA pill */
 .option-cta {
   margin-top: auto;
   align-self: flex-end;
@@ -189,13 +209,12 @@
   transition: transform 160ms ease;
 }
 
-.lobby-option:hover .option-cta {
-  transform: translateY(-3px);
-}
-
 /* subtle hover on whole card */
 .lobby-option:hover {
   box-shadow: 0 18px 44px rgba(0,0,0,0.55);
+}
+.lobby-option:hover .option-cta {
+  transform: translateY(-3px);
 }
 
 /* footer */
@@ -205,17 +224,36 @@
   font-size: 0.85rem;
 }
 
-/* responsive */
+/* responsive tweaks */
+@media (max-width: 1000px) {
+  .mode-card { max-width: 48%; flex: 1 1 48%; }
+  .mode-icon { width: 48px; height: 48px; }
+  .option-icon { width: 56px; height: 56px; }
+}
+
 @media (max-width: 720px) {
   .lobby-card {
     padding: 1.25rem;
   }
+
+  /* stack mode selectors vertically on narrow screens */
+  .mode-row {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .mode-card { max-width: 100%; flex: 1 1 100%; }
+
   .lobby-grid {
-    gap: 0.85rem;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   .option-cta {
     padding: 8px 10px;
   }
   .bg-card { width: 96px; }
   .bg-card--5, .bg-card--6 { display: none; } /* hide distant decorative cards on small screens */
+  .mode-icon { width: 44px; height: 44px; }
+  .option-icon { width: 48px; height: 48px; }
+  .lobby-option { min-height: 140px; }
 }

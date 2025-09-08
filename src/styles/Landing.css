@@ -1,13 +1,24 @@
-.landing {
-  width: 100%;
-  max-width: 1340px;
-  margin: 0 auto;
-  padding: 6rem 1.5rem 3rem; /* Добавлен верхний отступ для Navbar */
-  text-align: center;
-  background: transparent;
-  min-height: calc(100vh - 64px);
+:root {
+  --site-max-width: 1340px;
+  --page-padding: 1.5rem;
+  --accent-start: #00b7eb;
+  --accent-end: #0077b6;
+  --muted: #b0b8c1;
 }
 
+/* Page container */
+.landing {
+  width: 100%;
+  max-width: var(--site-max-width);
+  margin: 0 auto;
+  padding: 6rem var(--page-padding) 3rem;
+  background: transparent;
+  min-height: calc(100vh - 64px);
+  box-sizing: border-box;
+  color: #eaf6ff;
+}
+
+/* Hero */
 .landing-hero {
   display: flex;
   justify-content: space-between;
@@ -16,163 +27,262 @@
   margin-bottom: 3rem;
 }
 
+/* Left text block */
 .landing-text {
   flex: 1;
   text-align: left;
+  min-width: 260px;
 }
 
 .landing-text-title {
   font-size: 2.25rem;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 1rem;
+  margin: 0 0 12px 0;
+  line-height: 1.05;
 }
+.landing-text-title span { color: var(--accent-start); }
 
-.landing-text-title span {
-  background: linear-gradient(to right, #ffd700, #ff0000);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.landing-about { margin-bottom: 12px; }
+.about-desc {
+  font-size: 1.03rem;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 720px;
+  margin: 0;
 }
 
 .landing-text-description {
-  font-size: 1.125rem;
-  color: #b0b8c1;
-  line-height: 1.6;
-  max-width: 500px;
+  font-size: 1rem;
+  color: var(--muted);
+  margin-top: 10px;
+  max-width: 640px;
 }
 
+/* CTA */
+.hero-cta-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.landing-button {
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 0.6rem 1.6rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg,var(--accent-start),var(--accent-end));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 12px 36px rgba(6,120,160,0.12);
+}
+
+.landing-cta-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #bfeffb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Cards */
 .landing-cards-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  min-width: 260px;
 }
 
 .landing-cards {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   position: relative;
 }
 
 .landing-card {
-  width: 152.25px;
+  width: 152px;
   height: 216px;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  transition: transform 260ms ease, box-shadow 260ms ease;
+  object-fit: cover;
+}
+.landing-card-left { transform: rotate(-5deg); }
+.landing-card-right { transform: rotate(5deg); }
+
+.cards-caption {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 6px;
 }
 
-.landing-card-left {
-  transform: rotate(-5deg);
-}
-
-.landing-card-right {
-  transform: rotate(5deg);
-}
-
-.landing-button {
-  font-size: 1.25rem;
-  font-weight: 500;
-  padding: 0.5rem 2rem;
-  border: none;
-  border-radius: 0.3rem;
-  background: linear-gradient(to bottom, #00b7eb, #0077b6);
-  color: #ffffff;
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
+/* Steps */
 .landing-steps {
-  margin: 3rem 0;
+  margin: 2.6rem 0;
 }
 
 .landing-steps-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  margin-bottom: 2rem;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 1.2rem;
+  text-align: center;
 }
 
 .landing-steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
 }
 
 .landing-step {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
   text-align: left;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.landing-step:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 209, 255, 0.5);
+/* Keep WhyUs near */
+.why-us { margin-top: 1.2rem; }
+
+/* ===================== FOOTER ===================== */
+/* Full-width background */
+.site-footer {
+  width: 100%;
+  background: linear-gradient(180deg, rgba(3,6,12,0.95), rgba(6,10,16,0.92));
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding: 18px 0;
+  box-sizing: border-box;
+  box-shadow: 0 -6px 20px rgba(0,0,0,0.45);
 }
 
-.landing-step-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+/* Inner constrained container (this makes the footer visible as full-width bg but content aligned) */
+.site-footer .footer-inner {
+  width: 100%;
+  max-width: var(--site-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-padding);
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: row;           /* keep columns in a row on desktop */
+  align-items: flex-start;      /* align tops of columns */
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 48px;
 }
 
-.landing-step-heading {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 0.5rem;
+/* Container which groups the visible link columns */
+.site-footer .footer-columns {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  flex-wrap: nowrap; /* important: do NOT wrap on desktop */
 }
 
-.landing-step-text {
-  font-size: 0.875rem;
-  color: #b0b8c1;
-  line-height: 1.5;
+/* each footer column is a vertical stack */
+.site-footer .footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 160px;
 }
 
-@media (max-width: 768px) {
-  .landing {
-    padding: 7rem 1rem 3rem;
-  }
-  .landing-hero {
+/* list inside column */
+.site-footer .footer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* footer item row: icon + link */
+.site-footer .footer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #bfeff7;
+  text-decoration: none;
+  margin: 6px 0;
+  min-height: 28px; /* unify baseline */
+}
+
+.site-footer .footer-item a,
+.site-footer .footer-item a:visited {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+/* icon */
+.site-footer .footer-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: inline-block;
+  opacity: 0.95;
+}
+
+/* right-side copyright */
+.site-footer .footer-bottom {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 180px;
+}
+
+.site-footer .footer-copy {
+  color: #9fb6c6;
+  font-weight: 700;
+}
+
+/* =================== Responsive =================== */
+@media (max-width: 980px) {
+  .landing-hero { flex-direction: column; align-items: center; text-align: center; }
+  .landing-text { text-align: center; }
+  .landing-cards-container { margin-top: 8px; }
+
+  /* Stack footer columns vertically on smaller screens */
+  .site-footer .footer-inner {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: 12px;
   }
-  .landing-text {
-    text-align: center;
-    margin-bottom: 2rem;
+  .site-footer .footer-columns {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  .landing-text-title {
-    font-size: 1.75rem;
+  .site-footer .footer-col {
+    flex: 1 1 45%;
+    min-width: 120px;
   }
-  .landing-text-description {
-    font-size: 1rem;
+  .site-footer .footer-bottom {
+    margin-left: 0;
+    justify-content: flex-start;
   }
-  .landing-card {
-    width: 101.5px;
-    height: 144px;
+}
+
+@media (max-width: 560px) {
+  .landing { padding: 5.5rem 1rem 2.5rem; }
+  .landing-card { width: 102px; height: 144px; }
+  .landing-steps-title { font-size: 1.4rem; }
+
+  .site-footer .footer-inner {
+    padding: 12px 1rem;
   }
-  .landing-button {
-    font-size: 1.125rem;
-    padding: 0.4rem 1.5rem;
-  }
-  .landing-steps-title {
-    font-size: 1.75rem;
-  }
-  .landing-step {
-    padding: 1rem;
-  }
-  .landing-step-heading {
-    font-size: 1.125rem;
-  }
-  .landing-step-text {
-    font-size: 0.8125rem;
-  }
-  .landing-step-icon {
-    font-size: 1.5rem;
-  }
+  .site-footer .footer-columns { flex-direction: column; gap: 10px; }
+  .site-footer .footer-col { flex: 1 1 100%; min-width: auto; }
+  .site-footer .footer-bottom { text-align: left; justify-content: flex-start; }
 }

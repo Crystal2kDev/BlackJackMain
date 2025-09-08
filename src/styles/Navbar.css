@@ -1,210 +1,329 @@
-/* Navbar styling tuned to site theme (#131c27) and accents */
-:root{
-  --bg-dark: #131c27;
+/* src/styles/Navbar.css */
+/* color tokens */
+:root {
+  --container-width: 1340px;
+  --bg: #071428;
   --panel: rgba(255,255,255,0.03);
   --accent: #00b7eb;
   --accent-2: #0ea5b7;
   --text: #e6eef6;
   --muted: #9fb6c6;
-  --glass: rgba(255,255,255,0.04);
-  --container-width: 1200px; /* подстраивай, если у тебя другой максвью */
+  --danger: #ef4444;
 }
 
-/* Корневой блок (фон растягивается на всю ширину) */
+/* header base */
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 1100;
+  z-index: 1200;
   width: 100%;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.18));
   box-shadow: 0 6px 20px rgba(2,6,12,0.6);
   backdrop-filter: blur(6px);
 }
 
-/* тонкий полупрозрачный декоративный слой для глубины */
-.navbar-bg{
+/* decorative background layer */
+.navbar-bg {
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, rgba(19,28,39,0.98) 0%, rgba(19,28,39,0.95) 30%, rgba(22,34,45,0.85) 100%);
-  pointer-events: none;
   z-index: 0;
+  pointer-events: none;
 }
 
-/* внутренний контейнер с той же шириной, что и основной контент сайта */
+/* main container aligns with Landing width */
 .navbar-container {
   position: relative;
   z-index: 5;
-  width: 100%;
   max-width: var(--container-width);
   margin: 0 auto;
-  padding: 0 1.5rem; /* подгоняется под общий отступ сайта */
+  padding: 10px 20px;
   display: flex;
   align-items: center;
+  gap: 16px;
   justify-content: space-between;
-  gap: 1rem;
-  height: 64px;
   box-sizing: border-box;
+  height: 72px;
 }
 
-/* Левая часть (логотип) — логотип ровно у левой границы контейнера */
+/* left/logo */
 .navbar-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  height: 100%;
+  gap: 12px;
+  margin: 0;
 }
 
-/* Логотип — без лишних отступов */
+/* clickable logo wrapper */
 .navbar-logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 12px;
   text-decoration: none;
   color: var(--text);
-  font-family: 'Montserrat', 'Inter', sans-serif;
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.2px;
-  line-height: 1;
-  height: 100%;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: transform 180ms ease, box-shadow 200ms ease;
+  user-select: none;
 }
 
-/* логотипная эмблема */
-.logo-mark {
-  display: block;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-}
-
-/* текст логотипа: чуть светлее и без отступа слева */
-.logo-text {
-  color: var(--text);
-  font-size: 1.05rem;
+/* oracle logo mark (SVG circle + HTML text) */
+.oracle-logo-mark {
+  position: relative;
   display: inline-block;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+}
+.oracle-logo-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.oracle-monogram {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-family: "Montserrat", "Inter", sans-serif;
+  font-size: calc(56px * 0.46); /* responsive with container */
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.45);
+  mix-blend-mode: screen;
 }
 
-/* правая часть: ссылки и кнопка */
+/* title text next to logo */
+.logo-text-wrap { display:flex; flex-direction:column; line-height:1; }
+.logo-text { font-weight: 900; font-size: 1.2rem; color: var(--text); }
+.logo-sub { font-size: 0.72rem; color: var(--muted); }
+
+/* nav right */
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 12px;
 }
 
-/* группа навигационных ссылок */
+/* desktop links */
 .navbar-links {
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 1.25rem;
 }
 
-/* базовые ссылки */
 .navbar-link {
   color: var(--muted);
   text-decoration: none;
-  font-family: 'Inter', 'Montserrat', sans-serif;
-  font-size: 0.98rem;
-  font-weight: 600;
   padding: 8px 10px;
   border-radius: 8px;
-  transition: color 180ms ease, background 180ms ease, transform 150ms ease;
+  font-weight: 700;
+  transition: all 160ms ease;
 }
 
-/* hover эффект — акцентный цвет и лёгкий фон */
 .navbar-link:hover {
   color: var(--text);
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  background: rgba(255,255,255,0.02);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(2,6,12,0.45);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
 }
 
-/* активная ссылка */
 .navbar-link.active {
   color: var(--accent);
-  background: linear-gradient(90deg, rgba(0,183,235,0.08), rgba(14,165,183,0.06));
+  background: linear-gradient(90deg, rgba(0,183,235,0.06), rgba(14,165,183,0.04));
   box-shadow: 0 6px 18px rgba(0,167,200,0.06);
 }
 
-/* кнопка "Войти" */
+/* login button */
 .navbar-login-button {
+  padding: 8px 12px;
+  background: linear-gradient(180deg, var(--accent-2), #006c9a);
+  color: white;
+  border-radius: 10px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(0,119,153,0.15);
+}
+
+/* user area */
+.user-wrapper { position: relative; }
+.user-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 8px 14px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  text-decoration: none;
-  color: #fff;
-  background: linear-gradient(180deg, var(--accent-2), #006c9a);
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  cursor: pointer;
+}
+.user-btn:focus { outline: 2px solid rgba(0,183,235,0.18); }
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+.user-name { color: var(--text); font-weight: 800; font-size: 0.95rem; }
+
+/* user menu */
+.user-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 160px;
+  background: linear-gradient(180deg, rgba(8,12,16,0.98), rgba(10,14,18,0.98));
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0,119,153,0.18);
-  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  padding: 6px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.03);
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+  z-index: 1300;
+}
+.user-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.user-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+}
+.user-menu-item:hover { background: rgba(255,255,255,0.02); }
+.user-menu-item.destructive { color: var(--danger); font-weight: 800; }
+
+/* hamburger */
+.hamburger-btn {
+  display: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: absolute;
+  right: 18px;
+  top: 12px;
+  z-index: 1400;
+}
+.hamburger-lines {
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  position: relative;
+  display: inline-block;
+  transition: transform 260ms cubic-bezier(.2,.9,.24,1);
+}
+.hamburger-lines::before,
+.hamburger-lines::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  transition: transform 260ms cubic-bezier(.2,.9,.24,1), top 260ms cubic-bezier(.2,.9,.24,1), opacity 200ms ease;
+}
+.hamburger-lines::before { top: -7px; }
+.hamburger-lines::after  { top: 7px; }
+
+/* open state */
+.hamburger-btn.open .hamburger-lines { transform: rotate(45deg); }
+.hamburger-btn.open .hamburger-lines::before { top: 0; transform: rotate(90deg); }
+.hamburger-btn.open .hamburger-lines::after { opacity: 0; }
+
+/* mobile panel */
+.mobile-panel {
+  display: none;
+  position: absolute;
+  left: 0; right: 0;
+  top: 72px;
+  z-index: 1100;
+  justify-content: center;
+}
+.mobile-panel .mobile-inner {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(8,12,16,0.98), rgba(10,14,18,0.98));
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.03);
+  transform-origin: top center;
+  opacity: 0;
+  transform: translateY(-8px) scaleY(0.98);
+  transition: opacity 260ms ease, transform 260ms cubic-bezier(.2,.9,.24,1);
+}
+.mobile-panel.open { display: block; }
+.mobile-panel.open .mobile-inner { opacity: 1; transform: translateY(0) scaleY(1); }
+
+.mobile-item {
+  display: block;
+  padding: 10px 12px;
+  color: var(--text);
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.mobile-item:hover { background: rgba(255,255,255,0.02); }
+
+.mobile-divider { height: 1px; background: rgba(255,255,255,0.03); margin: 8px 0; }
+
+.mobile-cta {
+  display: inline-block;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, var(--accent-2), #006c9a);
+  color: white;
+  border-radius: 10px;
+  font-weight: 900;
+  text-decoration: none;
 }
 
-/* hover кнопки */
-.navbar-login-button:hover {
-  transform: translateY(-3px);
-  filter: brightness(1.03);
-  box-shadow: 0 16px 38px rgba(0,119,153,0.22);
+/* mobile user block */
+.mobile-user-block {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
-
-/* disabled-like state if needed */
-.navbar-login-button:active {
-  transform: translateY(-1px);
+.mobile-user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  object-fit: cover;
 }
+.mobile-user-name { font-weight: 900; color: var(--text); }
+.mobile-user-actions { display:flex; gap:8px; margin-left:auto; }
+.mobile-user-actions button { padding:8px 10px; border-radius:8px; background: rgba(255,255,255,0.02); color:var(--text); border:none; font-weight:700; cursor:pointer; }
+.mobile-user-actions button.destructive { color: var(--danger); }
 
-/* small screens: stack links into a compact row (keeps simple) */
+/* responsive rules */
 @media (max-width: 860px) {
-  .navbar-container {
-    padding: 0 1rem;
-  }
-
-  .navbar-links {
-    gap: 0.85rem;
-  }
-
-  .logo-text { font-size: 1rem; }
-  .navbar-link { font-size: 0.95rem; padding: 6px 8px; }
+  .navbar-links { display: none; }
+  .navbar-login-button { display: none; }
+  .hamburger-btn { display: flex; }
+  .user-wrapper { display: none; }
 }
 
-/* mobile: collapse to two rows (logo + links) */
-@media (max-width: 560px) {
-  .navbar-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    height: auto;
-    padding: 8px 12px;
-  }
-
-  .navbar-left {
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .navbar-right {
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .navbar-links {
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding-top: 6px;
-  }
-
-  .navbar-login-button {
-    justify-self: end;
-    width: 110px;
-    margin-left: auto;
-  }
+/* small phones adjustments */
+@media (max-width: 520px) {
+  .navbar-container { padding: 8px 12px; height: 64px; }
+  .logo-text { font-size: 1.05rem; }
+  .logo-sub { display: none; }
+  .oracle-logo-mark { width: 44px; height: 44px; }
+  .oracle-monogram { font-size: calc(44px * 0.46); }
 }
