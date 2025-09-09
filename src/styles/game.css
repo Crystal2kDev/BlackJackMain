@@ -51,7 +51,7 @@
 .game-table {
   position: relative;
   width: 100%;
-  height: 640px; /* можно подправить под дизайн */
+  height: 640px;
   display: block;
   overflow: visible;
   margin-top: 20px;
@@ -59,10 +59,10 @@
               linear-gradient(180deg, rgba(20,30,40,0.12), rgba(10,15,20,0.06));
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
   box-shadow: 0 14px 40px rgba(8,12,16,0.6), inset 0 -10px 40px rgba(0,0,0,0.4);
-  padding-bottom: 40px;
+  padding-bottom: 110px; /* увеличили, чтобы controls не наезжали на игроков */
 }
 
-/* Central semi-table highlight (darker center) */
+/* Central semi-table highlight */
 .game-table::before {
   content: "";
   position: absolute;
@@ -78,7 +78,7 @@
   z-index: 1;
 }
 
-/* Shoe (башмак) рядом с центром стола */
+/* Shoe */
 .shoe {
   position: absolute;
   top: 34px;
@@ -89,7 +89,7 @@
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
 }
 
-/* ---------- Dealer avatar ---------- */
+/* Dealer avatar */
 .dealer-avatar-wrapper {
   position: absolute;
   top: 16px;
@@ -103,7 +103,6 @@
   height: 140px;
   pointer-events: none;
 }
-
 .dealer-avatar {
   width: 110px;
   height: auto;
@@ -116,12 +115,7 @@
   z-index: 50;
 }
 
-.dealer-avatar:hover {
-  transform: translateY(-6px) scale(1.02);
-  filter: saturate(1.05);
-}
-
-/* Dealer area label and cards */
+/* Dealer area */
 .dealer-area {
   position: absolute;
   top: 180px;
@@ -133,7 +127,6 @@
   text-align: center;
   pointer-events: none;
 }
-
 .dealer-area h3 {
   margin: 0 0 8px 0;
   color: #dbeafe;
@@ -143,7 +136,7 @@
   text-shadow: 0 3px 8px rgba(0,0,0,0.6);
 }
 
-/* Row of dealer cards (centered) */
+/* Row of dealer cards */
 .cards-row {
   display: flex;
   justify-content: center;
@@ -164,8 +157,6 @@
   user-select: none;
   -webkit-user-drag: none;
 }
-
-/* hover (если пользователь наведёт на карту) — только в десктопе */
 @media (hover: hover) {
   .game-card:hover {
     transform: translateY(-8px) rotate(-1deg);
@@ -173,53 +164,76 @@
   }
 }
 
-/* ---------- Players: позиционирование по дуге стола ---------- */
+/* ---------- Players: равномерно по краям ---------- */
+/* мы выводим до 3 игроков - располагаем их ближе к краям контейнера, а не на столе */
 .game-players {
   position: absolute;
-  bottom: 36px;
+  bottom: -28px; /* немного ниже стола — игроки "за" краем */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: 1100px;
   z-index: 30;
-  display: block;
   pointer-events: none;
+  height: 220px;
 }
 
 /* общий стиль для зоны игрока */
 .player-area {
   position: absolute;
-  bottom: 8px;
-  width: 260px;
+  bottom: 0;
+  width: 240px;
   text-align: center;
   pointer-events: auto;
   transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
-/* конкретные позиции для 1-3 игроков */
-.player-1 { left: 6%; transform: translateX(0); }   /* левый */
-.player-2 { left: 50%; transform: translateX(-50%); } /* центр */
-.player-3 { right: 6%; transform: translateX(0); }  /* правый */
+/* позиции: left, center, right — сдвинуты к краям */
+.player-1 { left: 2%; transform: translateX(0); }    /* far left */
+.player-2 { left: 50%; transform: translateX(-50%); } /* middle */
+.player-3 { right: 2%; transform: translateX(0); }   /* far right */
 
-/* адаптивные поправки */
+/* адаптивные правки */
+@media (max-width: 1100px) {
+  .player-1 { left: 4%; }
+  .player-3 { right: 4%; }
+  .game-card { width: 84px; height: 126px; }
+  .player-area { width: 200px; }
+}
+
 @media (max-width: 880px) {
-  .player-1 { left: 8%; }
-  .player-2 { left: 50%; transform: translateX(-50%); }
-  .player-3 { right: 8%; }
+  /* вертикальная колонка на мелких экранах */
+  .game-players {
+    position: relative;
+    bottom: auto;
+    transform: none;
+    left: auto;
+    width: 100%;
+    padding-top: 12px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .player-area { position: relative; width: 140px; }
+  .player-1, .player-2, .player-3 { left: auto; right: auto; transform: none; }
+  .game-table { padding-bottom: 70px; }
   .game-card { width: 76px; height: 114px; }
-  .player-area { width: 160px; }
 }
 
 /* player avatar + name row */
 .player-top {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
   pointer-events: none;
 }
+.player-name-row { display: flex; gap: 8px; align-items: center; justify-content: center; pointer-events: none; }
+.player-name { font-weight: 800; color: #eaf6ff; }
+.player-shortid { font-family: monospace; color: #9fb6c6; font-weight: 700; }
 
+/* avatar */
 .player-avatar {
   width: 64px;
   height: 64px;
@@ -230,34 +244,17 @@
   position: relative;
 }
 
-/* hover effect */
-.player-avatar:hover {
-  transform: translateY(-4px);
-}
-
-/* ----- ПОДСВЕТКА ТЕКУЩЕГО ИГРОКА ----- */
-
-/* glow / lift for active player container */
+/* active player highlight */
 .player-area.player-active {
   transform: translateY(-6px);
-  z-index: 80; /* поднять выше остальных */
+  z-index: 80;
   filter: saturate(1.04);
 }
-
-/* subtle elevated shadow for the whole player's cards block */
-.player-area.player-active .cards-row .game-card {
-  box-shadow: 0 20px 50px rgba(2,6,12,0.65);
-  transform: translateY(-6px);
-}
-
-/* avatar highlight and ring */
 .player-area.player-active .player-avatar {
   transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 18px 40px rgba(6, 120, 255, 0.22), 0 6px 16px rgba(0,0,0,0.5);
+  box-shadow: 0 18px 40px rgba(6,120,255,0.22), 0 6px 16px rgba(0,0,0,0.5);
   border: 1px solid rgba(10,130,255,0.10);
 }
-
-/* animated ring around avatar */
 .player-area.player-active .player-avatar::after {
   content: "";
   position: absolute;
@@ -273,176 +270,80 @@
   z-index: -1;
 }
 
-/* ring keyframes */
-@keyframes pulse-ring {
-  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
-  50% { transform: translate(-50%, -50%) scale(1.07); opacity: 0.4; }
-  100% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
-}
+/* badgelike "Ход" */
+.your-turn-badge { display: inline-block; background: linear-gradient(90deg,#0ea5e9,#0ea5b7); color: #021223; font-weight: 700; padding: 4px 8px; border-radius: 999px; font-size: 0.75rem; margin-left: 6px; box-shadow: 0 8px 20px rgba(10,130,255,0.14); align-self: center; pointer-events: none; }
 
-/* badge "Ваш ход" / "Ход игрока" */
-.your-turn-badge {
-  display: inline-block;
-  background: linear-gradient(90deg,#0ea5e9,#0ea5b7);
-  color: #021223;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  margin-left: 6px;
-  box-shadow: 0 8px 20px rgba(10,130,255,0.14);
-  align-self: center;
-  pointer-events: none;
+/* ---------- Player bet area (loader + controls under each player) ---------- */
+.player-bet-area {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
+.player-bet-info { display:flex; gap:8px; color:#9fb6c6; font-weight:700; align-items:center; }
+.player-chips, .player-bet { font-size: 0.9rem; }
 
-/* небольшое изменение цвета имени когда ход игрока */
-.player-area.player-active h3,
-.player-area.player-active .your-turn-badge {
-  color: #eaf6ff;
-  text-shadow: 0 6px 18px rgba(6,120,255,0.14);
-}
+.player-bet-controls { width: 100%; display:flex; flex-direction:column; gap:6px; align-items:center; }
 
-/* ---------- Controls ---------- */
+/* small inline bet button for per-player UI */
+.bet-button.small, .game-button.small { padding: 6px 8px; font-size: 0.88rem; border-radius: 8px; }
+.bet-buttons-inline { display:flex; gap:6px; align-items:center; }
+
+/* timer bar under player */
+.player-bet-timer { width: 100%; height: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
+.player-bet-timer-bar { height: 100%; background: linear-gradient(90deg,#00b7eb,#0077b6); transition: width 0.12s linear; }
+
+/* waiting placeholder */
+.player-bet-wait { color: #b9dbe6; font-weight: 700; }
+
+/* static small placeholder when nobody is betting */
+.player-bet-static { color: #9fb6c6; }
+
+/* ---------- Controls centered under table ---------- */
 .game-controls {
   position: absolute;
   left: 50%;
-  bottom: 20px;
+  bottom: 14px;
   transform: translateX(-50%);
   z-index: 60;
   display: flex;
   gap: 12px;
   align-items: center;
   pointer-events: auto;
+  flex-wrap: wrap;
 }
+
+/* wide main start button */
+.game-button.large { padding: 12px 20px; font-size: 1rem; font-weight: 800; border-radius: 12px; }
+
+/* Quick bets (small inline) */
+.quick-bets { display:flex; gap:10px; align-items:center; }
 
 /* Стили кнопок ставок и управления */
-.bet-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  font-weight: 700;
-  background: linear-gradient(180deg,#0ea5b7,#0077b6);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
-}
+.bet-button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; font-weight: 700; background: linear-gradient(180deg,#0ea5b7,#0077b6); color: #fff; border: none; border-radius: 10px; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease; box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
+.game-button { padding: 10px 14px; background: linear-gradient(180deg,#1f2937,#111827); color: #e6eef6; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.45); transition: transform 180ms ease, box-shadow 180ms ease; }
 
-/* Общая кнопка (Сброс/Старт/Hit etc) */
-.game-button {
-  padding: 10px 14px;
-  background: linear-gradient(180deg,#1f2937,#111827);
-  color: #e6eef6;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
-  transition: transform 180ms ease, box-shadow 180ms ease;
-}
+.bet-button:disabled, .game-button:disabled { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.35); }
+.bet-button:hover:not(:disabled), .game-button:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,0.5); }
 
-.bet-button:disabled,
-.game-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  filter: grayscale(0.35);
-}
+/* chip icons */
+.chip-btn-icon { width: 22px; height: 22px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45)); transition: transform 220ms ease, filter 220ms ease; }
+.chip-icon-inline { width: 20px; height: 20px; margin-right: 8px; vertical-align: -3px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45)); transition: transform 260ms ease, opacity 260ms ease; }
+.chip-pulse { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.5)); will-change: transform, opacity; }
 
-.bet-button:hover:not(:disabled),
-.game-button:hover:not(:disabled) {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 36px rgba(0,0,0,0.5);
-}
+/* ---------- Info (top-right) ---------- */
+.game-info { position: absolute; top: 18px; right: 18px; z-index: 80; text-align: right; color: #d1e8f5; pointer-events: none; }
+.game-info p { margin: 6px 0; display: flex; align-items: center; gap: 8px; justify-content: flex-end; font-weight: 600; }
+.chips-line span, .bet-line span { font-size: 0.98rem; }
 
-/* ---------- Chip icons: размеры и анимации ---------- */
-.chip-btn-icon {
-  width: 22px;
-  height: 22px;
-  display: inline-block;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
-  transition: transform 220ms ease, filter 220ms ease;
-}
-
-.chip-icon-inline {
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
-  vertical-align: -3px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
-  transition: transform 260ms ease, opacity 260ms ease;
-}
-
-.chip-pulse {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.5));
-  will-change: transform, opacity;
-}
-
-.bet-chip-anim {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin-left: 8px;
-  vertical-align: middle;
-}
-
-/* ---------- Инфо (Фишки / Ставка) ---------- */
-.game-info {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 80;
-  text-align: right;
-  color: #d1e8f5;
-  pointer-events: none;
-}
-
-.game-info p {
-  margin: 6px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-end;
-  font-weight: 600;
-}
-
-.chips-line span,
-.bet-line span {
-  font-size: 0.98rem;
-}
-
-/* responsive: перенос game-info вниз на мобильных ширинах */
 @media (max-width: 780px) {
-  .game-info {
-    position: relative;
-    top: auto;
-    right: auto;
-    margin-top: 10px;
-    text-align: center;
-  }
+  .game-info { position: relative; top: auto; right: auto; margin-top: 10px; text-align: center; }
+  .game-controls { bottom: 6px; gap: 8px; }
+  .game-table { padding-bottom: 140px; }
 }
 
-/* ---------- Прочие мелкие улучшения ---------- */
-p { color: #cfeaff; }
-
-.game-card,
-.dealer-avatar,
-.player-avatar,
-.chip-btn-icon,
-.chip-icon-inline,
-.chip-pulse {
-  transition-timing-function: cubic-bezier(.2,.9,.3,1);
-}
-
-/* уменьшение высоты стола на очень маленьких экранах */
+/* small screens tweaks */
 @media (max-width: 420px) {
   .game-table { height: 520px; }
   .dealer-avatar-wrapper { width: 100px; height: 100px; top: 10px; }
@@ -454,130 +355,22 @@ p { color: #cfeaff; }
   .chip-pulse { width: 22px; height: 22px; }
 }
 
-/* End of previous Game.css content */
+/* Card flip wrappers */
+.card-flip-wrapper { position: relative; width: 96px; height: 144px; perspective: 900px; display: inline-block; }
+.card-flip-container { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; }
+.card-flip-container .game-card { position: absolute; left: 0; top: 0; backface-visibility: hidden; transform-origin: center; }
+.card-front { transform: rotateY(-180deg); }
+.card-back { transform: rotateY(0deg); }
 
-/* ------------------------------------------------------------------
-   NEW: Blackjack celebratory overlay + flip helpers
-   (added recently — keeps separate from main styles for clarity)
-   ------------------------------------------------------------------ */
-
-/* card flip wrapper (for dealer hole card) */
-.card-flip-wrapper {
-  position: relative;
-  width: 96px;
-  height: 144px;
-  perspective: 900px;
-  display: inline-block;
-}
-
-.card-flip-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-}
-
-/* hide front/back overflow during flip */
-.card-flip-container .game-card {
-  position: absolute;
-  left: 0;
-  top: 0;
-  backface-visibility: hidden;
-  transform-origin: center;
-}
-
-/* card front sits rotated initially when hidden */
-.card-front {
-  transform: rotateY(-180deg);
-}
-
-/* card back sits normally */
-.card-back {
-  transform: rotateY(0deg);
-}
-
-/* -------- BLACKJACK celebratory overlay -------- */
-.blackjack-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1500;
-  display: grid;
-  place-items: center;
-  pointer-events: none; /* не блокирует клики */
-  background: radial-gradient(60% 50% at 50% 40%, rgba(255,255,255,0.06), rgba(0,0,0,0.0) 60%);
-  animation: bj-fade-bg 2.2s ease forwards;
-}
-
-@keyframes bj-fade-bg {
-  0% { background-color: rgba(0,0,0,0.0); }
-  10% { background-color: rgba(0,0,0,0.18); }
-  90% { background-color: rgba(0,0,0,0.18); }
-  100% { background-color: rgba(0,0,0,0.0); }
-}
-
-.blackjack-banner {
-  position: relative;
-  padding: 22px 28px;
-  border-radius: 16px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
-  box-shadow: 0 18px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  overflow: hidden;
-  backdrop-filter: blur(2px);
-}
-
-.blackjack-banner::before {
-  /* диагональный блик */
-  content: "";
-  position: absolute;
-  left: -40%;
-  top: -20%;
-  width: 180%;
-  height: 60%;
-  background: linear-gradient(100deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.0) 60%);
-  transform: rotate(-8deg);
-  filter: blur(10px);
-  animation: bj-shine 2.1s ease-in-out forwards;
-}
-
-@keyframes bj-shine {
-  0% { transform: translateX(-30%) rotate(-8deg); opacity: 0.0; }
-  20% { opacity: 1; }
-  60% { transform: translateX(20%) rotate(-8deg); opacity: 1; }
-  100% { transform: translateX(60%) rotate(-8deg); opacity: 0; }
-}
-
-.blackjack-title {
-  display: block;
-  font-size: 2.2rem;
-  font-weight: 900;
-  letter-spacing: 2px;
-  line-height: 1.1;
-  background: linear-gradient(90deg, #ffffff, #9ee7ff, #43c8ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 8px 30px rgba(14,165,183,0.35);
-}
-
-.blackjack-sub {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #e6fbff;
-  opacity: 0.95;
-  text-shadow: 0 6px 16px rgba(0,0,0,0.45);
-}
-
-/* “искры” вокруг баннера */
-.blackjack-sparkles::before,
-.blackjack-sparkles::after {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  background:
+/* Blackjack overlay */
+.blackjack-overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; pointer-events: none; background: radial-gradient(60% 50% at 50% 40%, rgba(255,255,255,0.06), rgba(0,0,0,0.0) 60%); animation: bj-fade-bg 2.2s ease forwards; }
+@keyframes bj-fade-bg { 0% { background-color: rgba(0,0,0,0.0); } 10% { background-color: rgba(0,0,0,0.18); } 90% { background-color: rgba(0,0,0,0.18); } 100% { background-color: rgba(0,0,0,0.0); } }
+.blackjack-banner { position: relative; padding: 22px 28px; border-radius: 16px; text-align: center; background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06)); box-shadow: 0 18px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); overflow: hidden; backdrop-filter: blur(2px); }
+.blackjack-banner::before { content: ""; position: absolute; left: -40%; top: -20%; width: 180%; height: 60%; background: linear-gradient(100deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.0) 60%); transform: rotate(-8deg); filter: blur(10px); animation: bj-shine 2.1s ease-in-out forwards; }
+@keyframes bj-shine { 0% { transform: translateX(-30%) rotate(-8deg); opacity: 0.0; } 20% { opacity: 1; } 60% { transform: translateX(20%) rotate(-8deg); opacity: 1; } 100% { transform: translateX(60%) rotate(-8deg); opacity: 0; } }
+.blackjack-title { display: block; font-size: 2.2rem; font-weight: 900; letter-spacing: 2px; line-height: 1.1; background: linear-gradient(90deg, #ffffff, #9ee7ff, #43c8ff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 8px 30px rgba(14,165,183,0.35); }
+.blackjack-sub { display: block; margin-top: 6px; font-size: 0.95rem; font-weight: 800; color: #e6fbff; opacity: 0.95; text-shadow: 0 6px 16px rgba(0,0,0,0.45); }
+.blackjack-sparkles::before, .blackjack-sparkles::after { content: ""; position: absolute; inset: -40%; background:
     radial-gradient(4px 4px at 10% 20%, rgba(255,255,255,0.9), rgba(255,255,255,0) 70%),
     radial-gradient(3px 3px at 80% 10%, rgba(166,244,255,0.9), rgba(255,255,255,0) 70%),
     radial-gradient(3px 3px at 40% 80%, rgba(157,255,215,0.9), rgba(255,255,255,0) 70%),
@@ -586,22 +379,7 @@ p { color: #cfeaff; }
   animation: bj-sparkle 1.8s ease-in-out infinite;
   pointer-events: none;
 }
-
-.blackjack-sparkles::after {
-  animation-delay: .4s;
-  opacity: .8;
-}
-
-@keyframes bj-sparkle {
-  0% { transform: translateY(6px) scale(0.96); opacity: 0.8; }
-  50% { transform: translateY(-4px) scale(1); opacity: 1; }
-  100% { transform: translateY(6px) scale(0.96); opacity: 0.8; }
-}
-
-/* Small tweaks to ensure overlay visual harmony on different screen sizes */
-@media (max-width: 640px) {
-  .blackjack-title { font-size: 1.6rem; }
-  .blackjack-banner { padding: 16px 18px; border-radius: 12px; }
-}
+.blackjack-sparkles::after { animation-delay: .4s; opacity: .8; }
+@keyframes bj-sparkle { 0% { transform: translateY(6px) scale(0.96); opacity: 0.8; } 50% { transform: translateY(-4px) scale(1); opacity: 1; } 100% { transform: translateY(6px) scale(0.96); opacity: 0.8; } }
 
 /* End of file */

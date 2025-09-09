@@ -4,6 +4,13 @@ import { Link } from 'react-router-dom';
 import WhyUs from '../components/WhyUs';
 import '../styles/Landing.css';
 
+type Step = {
+  iconSrc: string;
+  heading: string;
+  text: string;
+  alt: string;
+};
+
 const Landing: React.FC = () => {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
@@ -13,22 +20,25 @@ const Landing: React.FC = () => {
     '/assets/cards/jack_of_clubs2.png',
   ];
 
-  const steps = [
+  const steps: Step[] = [
     {
-      icon: '🃏',
+      iconSrc: '/assets/mainprofile-icon.png',
       heading: 'Создайте аккаунт',
-      text: 'Регистрация занимает пару минут — сохраняйте прогресс и создавайте приватные лобби.'
+      text: 'Регистрация за пару минут — сохраняйте прогресс и создавайте приватные лобби.',
+      alt: 'Профиль',
     },
     {
-      icon: '💡',
+      iconSrc: '/assets/mainrules-icon.png',
       heading: 'Изучите правила',
-      text: 'Встроенные подсказки и быстрый гайд по блэкджеку и покеру помогут быстро освоиться.'
+      text: 'Встроенные подсказки и быстрый гайд по блэкджеку и покеру помогут быстро освоиться.',
+      alt: 'Правила',
     },
     {
-      icon: '🎮',
+      iconSrc: '/assets/maingame-icon.png',
       heading: 'Начните играть',
-      text: 'Выбирайте режим: против бота, приватные комнаты с друзьями или публичные лобби.'
-    }
+      text: 'Выбирайте режим: против бота, приватные комнаты с друзьями или публичные лобби.',
+      alt: 'Игра',
+    },
   ];
 
   return (
@@ -42,9 +52,9 @@ const Landing: React.FC = () => {
 
             <section className="landing-about" aria-labelledby="about-title">
               <p id="about-title" className="about-desc">
-                OracleGame — современная онлайн-платформа для карточных настольных игр. Мы даём возможность бесплатно играть в
-                классические игры: BlackJack, Poker и другие — как против умного бота, так и в приватных комнатах с друзьями.
-                Интуитивный интерфейс, адаптивный дизайн и плавная анимация создают комфортное игровое погружение.
+                OracleGame — современная онлайн-платформа для карточных настольных игр. Играйте бесплатно в
+                классические режимы: BlackJack, Poker и другие — как против умного бота, так и в приватных комнатах с друзьями.
+                Интуитивный интерфейс, адаптивный дизайн и плавные анимации создают комфортное игровое погружение.
               </p>
             </section>
 
@@ -102,12 +112,20 @@ const Landing: React.FC = () => {
             {steps.map((step, index) => (
               <motion.div
                 key={index}
-                className="landing-step"
+                className={`landing-step step-${index + 1}`}
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.14 }}
+                transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.12 }}
               >
-                <div className="landing-step-icon">{step.icon}</div>
+                <div className="landing-step-icon" aria-hidden="true">
+                  <img
+                    src={step.iconSrc}
+                    alt={step.alt}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/assets/fallback-icon.png';
+                    }}
+                  />
+                </div>
                 <h3 className="landing-step-heading">{step.heading}</h3>
                 <p className="landing-step-text">{step.text}</p>
               </motion.div>
@@ -118,7 +136,6 @@ const Landing: React.FC = () => {
         <WhyUs />
       </div>
 
-      {/* Футер: фон на всю ширину, внутренний контейнер привязан к max-width */}
       <footer className="site-footer" role="contentinfo" aria-label="Footer">
         <div className="footer-inner">
           <div className="footer-columns" role="navigation" aria-label="Footer links">

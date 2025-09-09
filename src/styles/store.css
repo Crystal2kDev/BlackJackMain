@@ -17,7 +17,7 @@
   padding: 2.5rem 1rem;
   display: flex;
   justify-content: center;
-  background: linear-gradient(180deg, #03101a 0%, #061525 100%);
+  background: #022758;
   color: var(--text);
   font-family: 'Inter', sans-serif;
 }
