@@ -66,11 +66,7 @@ export class PokerEngine {
     const values = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
     const suits = ['s','h','d','c']; // spades hearts diamonds clubs
     const deck: CardCode[] = [];
-    for (const v of values) {
-      for (const s of suits) {
-        deck.push(v + s);
-      }
-    }
+    for (const v of values) for (const s of suits) deck.push(v + s);
     return deck;
   }
 
@@ -201,23 +197,22 @@ export class PokerEngine {
     this.currentToActIdx = this.nextToActIndex(bbIdx);
   }
 
-  // Try to advance stage when betting round is settled
-  // Returns true if stage changed to showdown (so server may schedule showdown distribution)
+  /**
+   * Try to advance stage when betting round is settled.
+   * Returns true if stage changed to showdown (so caller may schedule showdown distribution).
+   */
   private tryAdvanceStageIfBetEqualized(): boolean {
     const active = this.seats.filter(s => s.pid !== null && !s.folded);
     if (active.length === 0) return false;
 
-    const prevStage = this.stage;
-
+    // At this point TS узко считает возможные стадии как четыре улицы.
     const maxBet = this.maxCurrentBet();
     const allBetsEqualOrAllIn = active.every(s => (s.bet === maxBet) || s.isAllIn);
-
-    // require that everyone either acted this round (or is all-in) — prevents premature advancement after first check
     const everyoneActedOrAllIn = active.every(s => s.isAllIn || (s.acted === true));
 
     if (!(allBetsEqualOrAllIn && everyoneActedOrAllIn)) return false;
 
-    // move bets into pot (simple model; side pots not fully handled here)
+    // Move bets to pot
     const totalBets = this.seats.reduce((acc, s) => acc + (s.bet ?? 0), 0);
     if (totalBets > 0) {
       this.pot += totalBets;
@@ -226,67 +221,63 @@ export class PokerEngine {
 
     // Advance stage
     if (this.stage === 'preflop') {
-      // flop: draw three
+      // flop (3 карты)
       this.board.push({ code: this.deck.pop() as CardCode });
       this.board.push({ code: this.deck.pop() as CardCode });
       this.board.push({ code: this.deck.pop() as CardCode });
       this.stage = 'flop';
     } else if (this.stage === 'flop') {
+      // turn (4-я карта)
       this.board.push({ code: this.deck.pop() as CardCode });
       this.stage = 'turn';
     } else if (this.stage === 'turn') {
+      // river (5-я карта) И СРАЗУ ШОУДАУН — без ещё одного раунда ставок
       this.board.push({ code: this.deck.pop() as CardCode });
-      this.stage = 'river';
-    } else if (this.stage === 'river') {
       this.stage = 'showdown';
       this.currentToActIdx = null;
-      // reset acted? not necessary for showdown
-      return prevStage !== this.stage && this.stage === 'showdown';
-    } else {
-      // nothing or already showdown
+      return true;
+    } else if (this.stage === 'river') {
+      // на всякий случай, если когда-то сюда попадём
+      this.stage = 'showdown';
+      this.currentToActIdx = null;
+      return true;
     }
 
-    // after stage advance, reset acted flags for new betting round
+    // Если не шоудаун — новый раунд ставок
     this.resetActedFlags();
+    this.currentToActIdx = (this.buttonIdx !== null)
+      ? this.nextToActIndex(this.buttonIdx)
+      : this.nextToActIndex(null);
 
-    // after stage advance, set currentToActIdx to first active after button (skip all-in/fold)
-    if (this.buttonIdx !== null) {
-      this.currentToActIdx = this.nextToActIndex(this.buttonIdx);
-    } else {
-      this.currentToActIdx = this.nextToActIndex(null);
-    }
-
-    return prevStage !== this.stage && this.stage === 'showdown';
+    return false;
   }
 
   /**
    * Apply an action from seat index (fold/call/check/raise/allin)
-   * Returns object { stageChangedToShowdown: boolean } so caller (RoomManager) can schedule distribution
+   * Returns { stageChangedToShowdown } so the caller can schedule distribution.
    */
-  applyAction(seatIdx: number, action: { type: 'fold'|'call'|'check'|'raise'|'allin'; amount?: number }): { stageChangedToShowdown: boolean } {
+  applyAction(
+    seatIdx: number,
+    action: { type: 'fold'|'call'|'check'|'raise'|'allin'; amount?: number }
+  ): { stageChangedToShowdown: boolean } {
     const seat = this.seats[seatIdx];
     if (!seat || seat.pid === null) throw new Error('Invalid seat');
 
-    // Basic stage validation
-    if (this.stage === 'waiting' || this.stage === 'results') {
+    // На шоудауне/результатах/ожидании действия запрещены
+    if (this.stage === 'waiting' || this.stage === 'results' || this.stage === 'showdown') {
       throw new Error('Hand not active');
     }
 
-    // Validate that it's this seat's turn
-    if (this.currentToActIdx === null) {
-      throw new Error('No active player to act');
-    }
-    if (seatIdx !== this.currentToActIdx) {
-      throw new Error('Not your turn');
-    }
+    // Validate turn
+    if (this.currentToActIdx === null) throw new Error('No active player to act');
+    if (seatIdx !== this.currentToActIdx) throw new Error('Not your turn');
 
-    // Validate that seat is allowed to act
+    // Validate seat
     if (seat.folded) throw new Error('Seat already folded');
     if (seat.isAllIn) throw new Error('Cannot act when all-in');
 
     // record previous maxBet to detect raises
     const prevMax = this.maxCurrentBet();
-    const prevStage = this.stage;
 
     if (action.type === 'fold') {
       seat.folded = true;
@@ -301,14 +292,12 @@ export class PokerEngine {
       if (seat.chips === 0) seat.isAllIn = true;
       seat.acted = true;
     } else if (action.type === 'check') {
-      const maxBet = prevMax;
-      if (seat.bet < maxBet) throw new Error('Cannot check when behind');
+      if (seat.bet < prevMax) throw new Error('Cannot check when behind');
       seat.acted = true;
     } else if (action.type === 'raise') {
       const raiseAmt = Math.max(Number(action.amount ?? this.minRaise), this.minRaise);
       if (!Number.isFinite(raiseAmt) || raiseAmt <= 0) throw new Error('Invalid raise amount');
-      const maxBet = prevMax;
-      const needToCall = Math.max(0, maxBet - seat.bet);
+      const needToCall = Math.max(0, prevMax - seat.bet);
       const totalPut = needToCall + raiseAmt;
       if (totalPut <= 0) throw new Error('Invalid total put');
       const actual = Math.min(totalPut, seat.chips);
@@ -316,7 +305,6 @@ export class PokerEngine {
       seat.bet += actual;
       seat.committed += actual;
       if (seat.chips === 0) seat.isAllIn = true;
-      // update minRaise
       this.minRaise = Math.max(this.minRaise, raiseAmt);
       seat.acted = true;
     } else if (action.type === 'allin') {
@@ -330,39 +318,34 @@ export class PokerEngine {
       throw new Error('Unknown action');
     }
 
-    // detect if this action increased max bet (i.e., was an aggression/raise)
+    // detect aggression
     const newMax = this.maxCurrentBet();
     const isAggression = newMax > prevMax;
-
     if (isAggression) {
-      // when someone raises/increases max, all other active (non-folded, non-allin) players must be given another chance
       this.seats.forEach(s => {
         if (s.pid !== seat.pid && s.pid !== null && !s.folded && !s.isAllIn) {
           s.acted = false;
         }
       });
-      // ensure raiser remains acted=true
       seat.acted = true;
     }
 
-    // If only one player remains (others folded) -> showdown/results early
+    // If only one player remains -> immediate showdown
     const activeRemaining = this.seats.filter(s => s.pid !== null && !s.folded);
     if (activeRemaining.length <= 1) {
       this.stage = 'showdown';
       this.currentToActIdx = null;
-      return { stageChangedToShowdown: prevStage !== this.stage && this.stage === 'showdown' };
+      return { stageChangedToShowdown: true };
     }
 
-    // attempt stage advance if everyone matched bets and acted
-    const advancedToShowdown = this.tryAdvanceStageIfBetEqualized();
-
-    // If after stage advance it's showdown, clear currentToActIdx and return indicator
-    if (advancedToShowdown || this.stage === 'showdown') {
+    // try advance stage
+    const movedToShowdown = this.tryAdvanceStageIfBetEqualized();
+    if (movedToShowdown) {
       this.currentToActIdx = null;
-      return { stageChangedToShowdown: prevStage !== this.stage && this.stage === 'showdown' };
+      return { stageChangedToShowdown: true };
     }
 
-    // Otherwise compute next to act (skip folded and all-in) starting after current seat
+    // next to act
     const next = this.nextToActIndex(seatIdx);
     this.currentToActIdx = next;
 
@@ -411,13 +394,12 @@ export class PokerEngine {
       contenders.forEach(({ s }, relIdx) => {
         const v = s.cards?.[0]?.code?.[0] ?? '';
         const sc = order.indexOf(v);
-        if (sc > bestScore) {
-          bestScore = sc;
-          bestRel = relIdx;
-        }
+        if (sc > bestScore) { bestScore = sc; bestRel = relIdx; }
       });
       winnerIndicesRel = [bestRel];
-      resultsInfo = contenders.map(({ s }, idx) => ({ index: idx, name: null, rank: null, handString: (s.cards || []).map(c => c.code).join(',') }));
+      resultsInfo = contenders.map(({ s }, idx) => ({
+        index: idx, name: null, rank: null, handString: (s.cards || []).map(c => c.code).join(',')
+      }));
     }
 
     // Map relative winner indices back to seat pids
@@ -428,7 +410,8 @@ export class PokerEngine {
 
     // Simplified payout distribution: split pot equally between winners
     const payoutPerWinner = Math.floor(this.pot / Math.max(1, winners.length));
-    const payouts: { pid: string | null; amount: number }[] = winners.map((pid) => ({ pid, amount: payoutPerWinner }));
+    const payouts: { pid: string | null; amount: number }[] =
+      winners.map((pid) => ({ pid, amount: payoutPerWinner }));
 
     // distribute remainder to first winner if any
     const remainder = this.pot - payoutPerWinner * winners.length;
@@ -442,19 +425,18 @@ export class PokerEngine {
       if (seat) seat.chips += p.amount;
     }
 
-    // Construct winnersDetail
+    // winnersDetail
     const winnersDetail = winners.map((pid, idx) => ({
       pid,
       reason: resultsInfo[idx]?.name ?? 'winner',
       index: idx,
     }));
 
-    // Reset hand basic fields
+    // Reset for next hand
     this.pot = 0;
     this.board = [];
     this.stage = 'results';
     this.currentToActIdx = null;
-    // Clear bets/committed/folded etc for next hand (caller/room manager might also reset)
     this.seats.forEach(s => {
       s.bet = 0;
       s.committed = 0;

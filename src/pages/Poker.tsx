@@ -85,7 +85,7 @@ function solveLabel(hole: Card[], board: Card[]): string {
   } catch { return '—'; }
 }
 
-/* ---------- CardFlip (анимация только при ПЕРВОМ раскрытии) ---------- */
+/* ---------- CardFlip (анимация только при ПЕРВОМ реальном раскрытии) ---------- */
 const FLIP_DURATION_MS = 480;
 const BOARD_STAGGER_MS = 240;
 
@@ -94,7 +94,7 @@ type CardFlipProps = {
   backSrc?: string;
   revealed: boolean;
   size?: 'normal' | 'small';
-  delayMs?: number;             // применяется только при ПЕРВОМ раскрытии
+  delayMs?: number;             // применяется только при ПЕРВОМ раскрытии в рамках ЖИЗНЕННОГО цикла компонента
   altFront?: string;
   altBack?: string;
 };
@@ -111,55 +111,95 @@ const CardFlip: React.FC<CardFlipProps> = ({
   const w = size === 'small' ? 72 : 92;
   const h = size === 'small' ? 108 : 136;
 
-  // Локально запоминаем: карта уже была раскрыта
-  const hasRevealedRef = useRef(false);
+  // Визуальное состояние (что отрисовано), отдельно от логического revealed.
+  // Инициализируем текущим значением revealed: если карта сразу "пришла" открытой (перезаход в раздачу) — без анимации.
+  const [visualRevealed, setVisualRevealed] = useState<boolean>(revealed);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
-  // Сброс в новый раунд: как только карта стала скрытой — снова разрешаем анимацию
+  // Запоминаем предыдущее значение revealed — важнее, чем просто "флаг был анимирован".
+  // Это гарантирует, что мы анимируем ТОЛЬКО на переходе false -> true.
+  const prevRevealedRef = useRef<boolean>(revealed);
+  const delayTimerRef = useRef<number | null>(null);
+  const endTimerRef = useRef<number | null>(null);
+
+  // Сбрасываем таймеры при размонтировании
   useEffect(() => {
-    if (!revealed) hasRevealedRef.current = false;
-  }, [revealed, frontSrc]);
+    return () => {
+      if (delayTimerRef.current) window.clearTimeout(delayTimerRef.current);
+      if (endTimerRef.current) window.clearTimeout(endTimerRef.current);
+    };
+  }, []);
 
-  // Только первый переход revealed:false -> true запускает флип
-  const shouldPlayNow = revealed && !hasRevealedRef.current;
-  if (shouldPlayNow) {
-    // помечаем, что уже отанимировали именно эту карту
-    hasRevealedRef.current = true;
-  }
+  useEffect(() => {
+    const was = prevRevealedRef.current;
 
-  const rotate = revealed ? 180 : 0;
-  const transition: any = shouldPlayNow
-    ? { duration: FLIP_DURATION_MS / 1000, ease: [0.2, 0.9, 0.3, 1], delay: (delayMs || 0) / 1000 }
-    : { duration: 0, delay: 0 }; // уже раскрыта — никаких флипов
+    // Если карта стала скрытой — сразу убираем визуальный поворот (без анимации).
+    if (!revealed) {
+      if (delayTimerRef.current) { window.clearTimeout(delayTimerRef.current); delayTimerRef.current = null; }
+      if (endTimerRef.current) { window.clearTimeout(endTimerRef.current); endTimerRef.current = null; }
+      setIsAnimating(false);
+      setVisualRevealed(false);
+      prevRevealedRef.current = false;
+      return;
+    }
+
+    // Переход false -> true: играем анимацию с задержкой (только ОДИН раз для этого перехода)
+    if (revealed && !was) {
+      if (delayTimerRef.current) window.clearTimeout(delayTimerRef.current);
+      delayTimerRef.current = window.setTimeout(() => {
+        setIsAnimating(true);
+        // делаем flip в следующем кадре, чтобы CSS transition применился корректно
+        requestAnimationFrame(() => setVisualRevealed(true));
+        if (endTimerRef.current) window.clearTimeout(endTimerRef.current);
+        endTimerRef.current = window.setTimeout(() => {
+          setIsAnimating(false);
+        }, FLIP_DURATION_MS) as unknown as number;
+      }, Math.max(0, delayMs)) as unknown as number;
+
+      prevRevealedRef.current = true;
+      return;
+    }
+
+    // revealed === true и раньше было true (маунт в середине раздачи/повторные апдейты):
+    // просто убеждаемся, что визуально карта открыта, без анимации.
+    setIsAnimating(false);
+    setVisualRevealed(true);
+    prevRevealedRef.current = true;
+  }, [revealed, delayMs]);
 
   return (
-    <motion.div
-      className={`card-flip card-flip--${size}`}
-      style={{ width: w, height: h, perspective: 1100 }}
-      initial={false}
+    <div
+      className={`card-flip card-flip--${size} ${isAnimating ? 'is-animating' : ''}`}
+      style={{
+        width: w,
+        height: h,
+        // CSS-переменные для читаемости/расширяемости
+        // @ts-ignore
+        '--flip-duration': `${FLIP_DURATION_MS}ms`,
+      } as React.CSSProperties}
     >
-      <motion.div
+      <div
         className="card-flip-inner"
-        animate={{ rotateY: rotate }}
-        initial={false}
-        transition={transition}
-        style={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          transform: `rotateY(${visualRevealed ? 180 : 0}deg)`,
+        }}
       >
         <img
           src={backSrc}
           alt={altBack ?? 'card back'}
           className="card-face card-back"
-          style={{ position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, borderRadius: 8, backfaceVisibility: 'hidden', transform: 'rotateY(0deg)', objectFit: 'cover' }}
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }}
         />
         <img
           src={frontSrc}
           alt={altFront ?? 'card front'}
           className="card-face card-front"
-          style={{ position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, borderRadius: 8, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', objectFit: 'cover' }}
           onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/cards/cardRedBack.png'; }}
         />
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 
@@ -174,11 +214,10 @@ const Poker: React.FC = () => {
   const [myCards, setMyCards] = useState<Card[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // board reveal bookkeeping (для задержек/стаггера — но больше не влияет на «повторные» флипы)
+  // board reveal bookkeeping (для задержек/стаггера — но не вызывает повторные флипы)
   const [boardRevealCountLocal, setBoardRevealCountLocal] = useState<number>(0);
+  const [boardRevealDelays, setBoardRevealDelays] = useState<number[]>(Array(5).fill(0));
   const prevStageRef = useRef<PokerStage | null>(null);
-  const revealTimersRef = useRef<number[]>([]);
-  const animateIndicesRef = useRef<Set<number>>(new Set());
 
   // showdown: разовое вскрытие карт игроков
   const showdownRevealRef = useRef(false);
@@ -253,11 +292,9 @@ const Poker: React.FC = () => {
 
     return () => {
       try { s.disconnect(); } catch {}
-      revealTimersRef.current.forEach((t) => { try { window.clearTimeout(t); } catch {} });
       if (winnerHighlightTimerRef.current) window.clearTimeout(winnerHighlightTimerRef.current);
       if (resultTimerRef.current) window.clearTimeout(resultTimerRef.current);
       if (turnIntervalRef.current) window.clearInterval(turnIntervalRef.current);
-      animateIndicesRef.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -284,7 +321,7 @@ const Poker: React.FC = () => {
     return () => { if (turnIntervalRef.current) { window.clearInterval(turnIntervalRef.current); turnIntervalRef.current = null; } };
   }, [state.currentToActPid, turnTimeMs]);
 
-  // разовый триггер анимации при входе в showdown/results
+  // разовый триггер (оставлено на будущее — логика вскрытия чужих карт)
   useEffect(() => {
     const prev = prevStageRef.current;
     if (prev && prev !== 'showdown' && prev !== 'results' && (state.stage === 'showdown' || state.stage === 'results')) {
@@ -293,7 +330,7 @@ const Poker: React.FC = () => {
     }
   }, [state.stage]);
 
-  // мои карты — первый флип при раздаче
+  // мои карты — первый флип при раздаче (флаг на будущее; сейчас флип делают CardFlip по данным)
   useEffect(() => {
     if (myCards.length > prevMyCardsLenRef.current) {
       if (myCards.length >= 2 && state.stage === 'preflop') {
@@ -322,38 +359,27 @@ const Poker: React.FC = () => {
 
       // локальный счётчик раскрытых карт борда (для задержек)
       const targetReveal = stageToRevealCount(next.stage, next.board);
+      const currentLocal = boardRevealCountLocal;
 
       if (prevStageRef.current === null) {
-        clearAllRevealTimers(); animateIndicesRef.current.clear();
         setBoardRevealCountLocal(targetReveal);
+        setBoardRevealDelays(Array(5).fill(0));
       } else if (prevStageRef.current !== next.stage) {
-        const currentLocal = boardRevealCountLocal;
-        if (targetReveal > currentLocal) animateBoardReveal(currentLocal, targetReveal);
-        else { clearAllRevealTimers(); animateIndicesRef.current.clear(); setBoardRevealCountLocal(targetReveal); }
+        if (targetReveal > currentLocal) {
+          const newDelays = [...boardRevealDelays];
+          for (let j = currentLocal; j < targetReveal; j++) {
+            newDelays[j] = (j - currentLocal) * BOARD_STAGGER_MS;
+          }
+          setBoardRevealDelays(newDelays);
+          setBoardRevealCountLocal(targetReveal);
+        } else {
+          setBoardRevealCountLocal(targetReveal);
+          setBoardRevealDelays(Array(5).fill(0));
+        }
       }
       prevStageRef.current = next.stage;
       return next;
     });
-  };
-
-  const clearAllRevealTimers = () => {
-    revealTimersRef.current.forEach((t) => { try { window.clearTimeout(t); } catch {} });
-    revealTimersRef.current = [];
-  };
-
-  const animateBoardReveal = (fromCount: number, toCount: number) => {
-    clearAllRevealTimers(); animateIndicesRef.current.clear();
-    for (let next = fromCount + 1; next <= toCount; next++) {
-      const idx = next - 1;
-      const delay = (next - fromCount - 1) * BOARD_STAGGER_MS;
-      const timer = window.setTimeout(() => {
-        animateIndicesRef.current.add(idx);
-        setBoardRevealCountLocal(next);
-        const removal = window.setTimeout(() => { animateIndicesRef.current.delete(idx); }, FLIP_DURATION_MS + 120) as unknown as number;
-        revealTimersRef.current.push(removal);
-      }, delay) as unknown as number;
-      revealTimersRef.current.push(timer);
-    }
   };
 
   const stageToRevealCount = (stage: PokerStage, board: Card[] = []) => {
@@ -429,7 +455,7 @@ const Poker: React.FC = () => {
     const revealedA = Boolean(cardA);
     const revealedB = Boolean(cardB);
 
-    // для игроков используем такой же one-time-флип: флип произойдёт один раз — когда карта впервые станет revealed
+    // Для игроков — плавный one-time-флип на первое появление карт.
     const firstRevealA_delay = 0;
     const firstRevealB_delay = 80;
 
@@ -529,8 +555,7 @@ const Poker: React.FC = () => {
       <div className="board-cards" role="list" aria-label="Board cards">
         {boardCards.map((card, i) => {
           const shouldReveal = i < boardRevealCountLocal && Boolean(card);
-          const delayForCard = i * BOARD_STAGGER_MS;
-          const shouldAnimate = animateIndicesRef.current.has(i); // только для НОВОЙ карты задаём задержку
+          const delayForCard = boardRevealDelays[i];
           return (
             <CardFlip
               key={`board-${i}`}
@@ -538,7 +563,7 @@ const Poker: React.FC = () => {
               backSrc="/assets/cards/cardRedBack.png"
               revealed={shouldReveal}
               size="normal"
-              delayMs={shouldAnimate ? delayForCard : 0}
+              delayMs={delayForCard}
               altFront={card?.name}
               altBack="board back"
             />
