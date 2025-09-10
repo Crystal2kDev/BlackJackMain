@@ -174,10 +174,16 @@ const scheduleBetForCurrent = (roomId: string) => {
       room.currentPlayer = i;
       clearBetTimers(room);
       if (room.currentPlayer >= room.players.length) {
-        room.state = 'dealing';
-        room.processing = true;
-        broadcastGameUpdate(roomId);
-        setTimeout(() => dealCards(roomId), 180);
+        const hasBets = room.players.some(p => p.bet > 0);
+        if (hasBets) {
+          room.state = 'dealing';
+          room.processing = true;
+          broadcastGameUpdate(roomId);
+          setTimeout(() => dealCards(roomId), 180);
+        } else {
+          resetRound(roomId);
+          io.to(roomId).emit('error', { message: 'Никто не поставил ставку, раунд сброшен.' });
+        }
       } else {
         broadcastGameUpdate(roomId);
         scheduleBetForCurrent(roomId);
@@ -505,10 +511,16 @@ io.on('connection', (socket: Socket) => {
       room.currentPlayer = i;
 
       if (room.currentPlayer >= room.players.length) {
-        room.state = 'dealing';
-        room.processing = true;
-        broadcastGameUpdate(roomId);
-        setTimeout(() => dealCards(roomId), 180);
+        const hasBets = room.players.some(p => p.bet > 0);
+        if (hasBets) {
+          room.state = 'dealing';
+          room.processing = true;
+          broadcastGameUpdate(roomId);
+          setTimeout(() => dealCards(roomId), 180);
+        } else {
+          resetRound(roomId);
+          io.to(roomId).emit('error', { message: 'Никто не поставил ставку, раунд сброшен.' });
+        }
         return;
       }
       broadcastGameUpdate(roomId);
@@ -535,10 +547,16 @@ io.on('connection', (socket: Socket) => {
     room.currentPlayer = i;
 
     if (room.currentPlayer >= room.players.length) {
-      room.state = 'dealing';
-      room.processing = true;
-      broadcastGameUpdate(roomId);
-      setTimeout(() => dealCards(roomId), 180);
+      const hasBets = room.players.some(p => p.bet > 0);
+      if (hasBets) {
+        room.state = 'dealing';
+        room.processing = true;
+        broadcastGameUpdate(roomId);
+        setTimeout(() => dealCards(roomId), 180);
+      } else {
+        resetRound(roomId);
+        io.to(roomId).emit('error', { message: 'Никто не поставил ставку, раунд сброшен.' });
+      }
       return;
     }
 
@@ -568,7 +586,12 @@ io.on('connection', (socket: Socket) => {
         room.currentPlayer++;
       }
       broadcastGameUpdate(roomId);
-      scheduleBetForCurrent(roomId);
+      if (room.currentPlayer < room.players.length) {
+        scheduleBetForCurrent(roomId);
+      } else {
+        resetRound(roomId);
+        io.to(roomId).emit('error', { message: 'Нет активных игроков.' });
+      }
       return;
     } else {
       socket.emit('error', { message: 'Нельзя начать сбор ставок в текущем статусе' });
