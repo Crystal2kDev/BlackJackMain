@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Store.css';
+import '../styles/store.css';
 
 type ChipPack = { id: string; chips: number; price: string; bonus?: string; desc?: string };
 type SubPlan = { id: string; title: string; price: string; perks: string[]; tag?: string };

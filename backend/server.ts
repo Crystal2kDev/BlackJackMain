@@ -4,17 +4,40 @@ import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import crypto from 'crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // --- Poker manager (нижний регистр пути) ---
 import { RoomManager } from './poker/roomManager.ts';
 
+// ====== __dirname / __filename в ESM ======
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ====== ENV / сетевые настройки ======
+const PORT = Number(process.env.PORT || 3000);
+// слушаем localhost (за Nginx). Если нужно наружу напрямую — поставь '0.0.0.0'
+const HOST = process.env.HOST || '127.0.0.1';
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'http://localhost:5173', methods: ['GET', 'POST'] },
+  // если фронт и бэк идут с одного домена за Nginx, cors можно оставлять false
+  cors: { origin: '*', methods: ['GET', 'POST'] },
 });
 
+app.set('trust proxy', 1);
+app.use(express.json());
 app.use(cors());
+
+// ====== Статика Vite (если сервер сам раздаёт фронт) ======
+const distDir = path.join(__dirname, '../dist');
+app.use(express.static(distDir));
+
+// SPA-роутинг, но не перехватываем Socket.IO
+app.get(/^\/(?!socket\.io\/).*/, (_req, res) => {
+  res.sendFile(path.join(distDir, 'index.html'));
+});
 
 // ========================= BLACKJACK CONFIG =========================
 const CARD_ANIM_DURATION_MS = 420;
@@ -40,10 +63,10 @@ type Room = {
   players: Player[];
   dealer: Dealer;
   state: 'betting' | 'collectingBets' | 'dealing' | 'playing' | 'dealerTurn' | 'results';
-  currentPlayer: number; // index among asked-for-bets OR among active players when playing
+  currentPlayer: number;
   deck: Card[];
   stateId: number;
-  processing?: boolean; // to avoid concurrent operations per-room
+  processing?: boolean;
   betTimer?: NodeJS.Timeout | null;
   betInterval?: NodeJS.Timeout | null;
   betRemainingMs?: number;
@@ -64,7 +87,12 @@ const deckTemplate: Card[] = suits.flatMap((suit) =>
     image: `/assets/cards/${value.name}_of_${suit}${
       suit === 'clubs' && ['jack', 'queen', 'king'].includes(value.name) ? '2' : ''
     }.png`,
-    value: value.name === 'ace' ? 11 : ['jack', 'queen', 'king'].includes(value.name) ? 10 : parseInt(value.name),
+    value:
+      value.name === 'ace'
+        ? 11
+        : ['jack', 'queen', 'king'].includes(value.name)
+        ? 10
+        : parseInt(value.name),
   }))
 );
 
@@ -174,7 +202,7 @@ const scheduleBetForCurrent = (roomId: string) => {
       room.currentPlayer = i;
       clearBetTimers(room);
       if (room.currentPlayer >= room.players.length) {
-        const hasBets = room.players.some(p => p.bet > 0);
+        const hasBets = room.players.some((p) => p.bet > 0);
         if (hasBets) {
           room.state = 'dealing';
           room.processing = true;
@@ -209,12 +237,7 @@ const resetRound = (roomId: string) => {
   broadcastGameUpdate(roomId);
 };
 
-/**
- * IMPORTANT: declare dealCards and dealerTurn as function declarations
- * so they are hoisted and available from any handler ordering.
- */
-
-/* Dealer's turn function — function declaration (hoisted) */
+/** Dealer turn (hoisted) */
 async function dealerTurn(roomId: string) {
   const room = rooms[roomId];
   if (!room) return;
@@ -283,7 +306,7 @@ async function dealerTurn(roomId: string) {
   }
 }
 
-/* Dealing function — function declaration (hoisted) */
+/** Deal cards (hoisted) */
 function dealCards(roomId: string) {
   const room = rooms[roomId];
   if (!room) return;
@@ -332,7 +355,9 @@ function dealCards(roomId: string) {
     // slight wait then natural check
     setTimeout(() => {
       const allActive = room.players.filter((p) => p.bet > 0);
-      const playersWithBJ = allActive.filter((p) => p.cards.length === 2 && calculatePoints(p.cards) === 21);
+      const playersWithBJ = allActive.filter(
+        (p) => p.cards.length === 2 && calculatePoints(p.cards) === 21
+      );
       const dealerBJ = room.dealer.cards.length === 2 && room.dealer.points === 21;
 
       if (dealerBJ) {
@@ -442,7 +467,7 @@ io.on('connection', (socket: Socket) => {
         return;
       }
 
-      const pid = incomingPid || genPid();
+      const pid = incomingPid || crypto.randomBytes(8).toString('hex');
       rooms[roomId].players.push({
         pid,
         socketId: socket.id,
@@ -511,7 +536,7 @@ io.on('connection', (socket: Socket) => {
       room.currentPlayer = i;
 
       if (room.currentPlayer >= room.players.length) {
-        const hasBets = room.players.some(p => p.bet > 0);
+        const hasBets = room.players.some((p) => p.bet > 0);
         if (hasBets) {
           room.state = 'dealing';
           room.processing = true;
@@ -547,7 +572,7 @@ io.on('connection', (socket: Socket) => {
     room.currentPlayer = i;
 
     if (room.currentPlayer >= room.players.length) {
-      const hasBets = room.players.some(p => p.bet > 0);
+      const hasBets = room.players.some((p) => p.bet > 0);
       if (hasBets) {
         room.state = 'dealing';
         room.processing = true;
@@ -599,13 +624,6 @@ io.on('connection', (socket: Socket) => {
   });
 
   const getActivePlayers = (room: Room) => room.players.filter((p) => p.bet > 0);
-  const getActivePlayerByTurn = (room: Room) => {
-    const active = getActivePlayers(room);
-    if (active.length === 0) return null;
-    const idx = room.currentPlayer;
-    if (idx < 0 || idx >= active.length) return null;
-    return active[idx];
-  };
 
   socket.on('hit', async () => {
     const roomId = 'defaultRoom';
@@ -676,8 +694,8 @@ io.on('connection', (socket: Socket) => {
     }
     room.processing = true;
     try {
-      const activePlayers = getActivePlayers(room);
-      const player = activePlayers[room.currentPlayer];
+      const newActivePlayers = getActivePlayers(room);
+      const player = newActivePlayers[room.currentPlayer];
       if (!player || player.socketId !== socket.id || room.state !== 'playing') {
         socket.emit('error', { message: 'Недопустимое действие' });
         return;
@@ -685,7 +703,6 @@ io.on('connection', (socket: Socket) => {
       console.log('BJ: stand', { pid: player.pid });
       room.currentPlayer += 1;
 
-      const newActivePlayers = getActivePlayers(room);
       if (room.currentPlayer >= newActivePlayers.length) {
         const anyNotBusted = newActivePlayers.some((p) => p.points <= 21);
         if (!anyNotBusted) {
@@ -725,14 +742,14 @@ io.on('connection', (socket: Socket) => {
       }
     }
   });
-
-}); // end io.on('connection')
+});
 
 // ========================= ATTACH POKER MANAGER =========================
 const pokerRooms = new RoomManager();
 pokerRooms.attach(io);
 
 // ========================= START SERVER =========================
-server.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+server.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
+

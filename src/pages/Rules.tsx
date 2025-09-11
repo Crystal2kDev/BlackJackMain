@@ -1,5 +1,5 @@
 import React from 'react';
-import '../styles/Rules.css';
+import '../styles/rules.css';
 import { Link } from 'react-router-dom';
 
 const currentYear = new Date().getFullYear();

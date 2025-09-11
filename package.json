@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start:client": "vite",
-    "start:server": "ts-node-dev --respawn --transpile-only backend/server.ts"
+    "start:server": "ts-node --esm --transpile-only backend/server.ts",
+    "start:server:prod": "node backend/server.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
@@ -51,6 +52,6 @@
     "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.2"
+    "vite": "^7.1.5"
   }
 }

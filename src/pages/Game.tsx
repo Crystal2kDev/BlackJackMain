@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ioClient from 'socket.io-client';
 import { useSearchParams } from 'react-router-dom';
-import '../styles/Game.css';
+import '../styles/game.css';
 
-const SOCKET_URL = 'http://localhost:3000';
+const SOCKET_URL =
+  (import.meta as any).env?.VITE_SOCKET_URL?.trim() ||
+  (typeof window !== 'undefined' ? window.location.origin : '');
 
 // Animation timing constants (should match server config)
 const CARD_ANIM_DURATION_MS = 420;

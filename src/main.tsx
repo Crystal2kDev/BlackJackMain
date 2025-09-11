@@ -16,7 +16,7 @@ import PokerRules from './pages/PokerRules';
 import BlackJackRules from './pages/BlackJackRules';
 import Support from './pages/Support';
 
-import './styles/navbar.css';
+import './styles/Navbar.css';
 import './styles/faq.css';
 import './styles/game.css';
 import './styles/Lobby.css';
