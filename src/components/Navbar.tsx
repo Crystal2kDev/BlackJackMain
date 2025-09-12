@@ -1,4 +1,3 @@
-// src/components/Navbar.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import '../styles/Navbar.css';
@@ -15,31 +14,6 @@ type CurrentUser = {
   avatarUrl?: string;
 };
 
-const OracleLogo: React.FC<{ size?: number }> = ({ size = 56 }) => {
-  // SVG circle + HTML text overlay (OG)
-  const s = Math.max(32, size);
-  return (
-    <div className="oracle-logo-mark" style={{ width: s, height: s }}>
-      <svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet" className="oracle-logo-svg" aria-hidden>
-        <defs>
-          <linearGradient id="oracleGrad" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stopColor="#00b7eb" />
-            <stop offset="1" stopColor="#0077b6" />
-          </linearGradient>
-        </defs>
-        <circle cx="60" cy="60" r="50" fill="none" stroke="url(#oracleGrad)" strokeWidth="10" strokeLinecap="round" />
-        {/* optional inner subtle ring */}
-        <circle cx="60" cy="60" r="36" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
-      </svg>
-
-      {/* OG text overlay (regular DOM text, not SVG) */}
-      <span className="oracle-monogram" aria-hidden>
-        OG
-      </span>
-    </div>
-  );
-};
-
 const Navbar: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -54,7 +28,7 @@ const Navbar: React.FC = () => {
         const parsed = JSON.parse(raw);
         if (parsed && parsed.name) setUser(parsed as CurrentUser);
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
@@ -80,10 +54,26 @@ const Navbar: React.FC = () => {
 
       <div className="navbar-container">
         <div className="navbar-left">
-          <NavLink to="/" className="navbar-logo" aria-label="OracleGame — главная" onClick={() => setMobileOpen(false)}>
-            <OracleLogo size={58} />
+          <NavLink
+            to="/"
+            className="navbar-logo"
+            aria-label="TableRush — главная"
+            onClick={() => setMobileOpen(false)}
+          >
+            
+            <div className="tablerush-logo-mark">
+              <img
+                src="/assets/TableRush_icon.png"
+                alt="TableRush logo"
+                className="logo-icon-img"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/assets/default-avatar.png';
+                }}
+              />
+            </div>
+
             <div className="logo-text-wrap">
-              <span className="logo-text">OracleGame</span>
+              <span className="logo-text">TableRush</span>
               <small className="logo-sub">Play &amp; Win</small>
             </div>
           </NavLink>
@@ -118,7 +108,7 @@ const Navbar: React.FC = () => {
                   onClick={() => setUserMenuOpen(v => !v)}
                 >
                   <img
-                    src={user.avatarUrl ?? `/assets/default-avatar.png`}
+                    src={user.avatarUrl ?? '/assets/default-avatar.png'}
                     alt={user.name}
                     className="user-avatar"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/assets/default-avatar.png'; }}
@@ -160,7 +150,12 @@ const Navbar: React.FC = () => {
             <NavLink to="/login" className="mobile-cta" onClick={() => setMobileOpen(false)}>Войти</NavLink>
           ) : (
             <div className="mobile-user-block">
-              <img className="mobile-user-avatar" src={user.avatarUrl ?? '/assets/default-avatar.png'} alt={user.name} onError={(e) => (e.currentTarget as HTMLImageElement).src = '/assets/default-avatar.png'} />
+              <img
+                className="mobile-user-avatar"
+                src={user.avatarUrl ?? '/assets/default-avatar.png'}
+                alt={user.name}
+                onError={(e) => ((e.currentTarget as HTMLImageElement).src = '/assets/default-avatar.png')}
+              />
               <div className="mobile-user-name">{user.name}</div>
               <div className="mobile-user-actions">
                 <button onClick={() => { setMobileOpen(false); navigate('/profile'); }}>Профиль</button>

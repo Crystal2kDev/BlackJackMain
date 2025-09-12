@@ -47,12 +47,12 @@ const Landing: React.FC = () => {
         <div className="landing-hero">
           <div className="landing-text">
             <h1 className="landing-text-title">
-              Что такое <span>OracleGame?</span>
+              Что такое <span>TableRush?</span>
             </h1>
 
             <section className="landing-about" aria-labelledby="about-title">
               <p id="about-title" className="about-desc">
-                OracleGame — современная онлайн-платформа для карточных настольных игр. Играйте бесплатно в
+                Cовременная онлайн-платформа для карточных настольных игр. Играйте бесплатно в
                 классические режимы: BlackJack, Poker и другие — как против умного бота, так и в приватных комнатах с друзьями.
                 Интуитивный интерфейс, адаптивный дизайн и плавные анимации создают комфортное игровое погружение.
               </p>

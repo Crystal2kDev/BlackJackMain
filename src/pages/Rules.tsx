@@ -9,7 +9,7 @@ const Rules: React.FC = () => {
     <main className="rules-page" aria-labelledby="rules-title">
       <div className="rules-container">
         <header className="rules-header">
-          <h1 id="rules-title">Правила сайта — OracleGame</h1>
+          <h1 id="rules-title">Правила сайта — TableRush</h1>
           <p className="rules-sub">Последнее обновление: {currentYear} — ознакомьтесь с правилами перед использованием сервиса.</p>
         </header>
 
@@ -30,7 +30,7 @@ const Rules: React.FC = () => {
           <ol className="rules-list">
             <li>
               <p>
-                1.1. Администрацией сайта OracleGame является специально уполномоченная команда (далее — «Администрация»),
+                1.1. Администрацией сайта TableRush является специально уполномоченная команда (далее — «Администрация»),
                 ответственная за работу платформы, техническую поддержку и развитие проекта.
               </p>
             </li>
@@ -58,7 +58,7 @@ const Rules: React.FC = () => {
             <li>
               <p>
                 2.1. Пользователем сайта считается любое физическое лицо, зарегистрировавшееся и получившее уникальный идентификатор профиля
-                (аккаунт) на платформе OracleGame.
+                (аккаунт) на платформе TableRush.
               </p>
             </li>
 
@@ -187,7 +187,7 @@ const Rules: React.FC = () => {
                 5.3. Контакты:
               </p>
               <ul className="rules-sublist">
-                <li>Электронная почта поддержки: <a href="mailto:support@oraclegame.example">support@oraclegame.example</a></li>
+                <li>Электронная почта поддержки: <a href="mailto:support@tablerush.example">support@tablerush.example</a></li>
                 <li>Телеграм (по вопросам блокировок и срочной помощи): <a href="https://t.me/crystal_dev" target="_blank" rel="noopener noreferrer">@crystal_dev</a></li>
               </ul>
             </li>
@@ -201,7 +201,7 @@ const Rules: React.FC = () => {
           </div>
 
           <div className="rules-footer-right">
-            <a className="support-link" href="mailto:support@oraclegame.example">Написать в поддержку</a>
+            <a className="support-link" href="mailto:support@tablerush.example">Написать в поддержку</a>
             <Link to="/faq" className="help-link">Часто задаваемые вопросы</Link>
           </div>
         </footer>

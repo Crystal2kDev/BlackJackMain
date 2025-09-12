@@ -83,7 +83,7 @@ const Login: React.FC = () => {
             </svg>
 
             <div className="header-texts">
-              <h1 id="auth-title">OracleGame</h1>
+              <h1 id="auth-title">TableRush</h1>
               <div className="header-sub">Вход по одноразовому коду</div>
             </div>
           </div>
